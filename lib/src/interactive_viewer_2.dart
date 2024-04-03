@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'better_interactive_viewer.dart';
 
 /// A drop in replacement for the InteractiveViewer widget with better zoom support, scrollbars, and more.
-class InteractiveViewer2 extends BetterInteractiveViewer{
-
+class InteractiveViewer2 extends BetterInteractiveViewer {
   /// The child contained by the InteractiveViewer.
   final Widget child;
 
@@ -32,12 +31,17 @@ class InteractiveViewer2 extends BetterInteractiveViewer{
   });
 
   @override
-  BetterInteractiveViewerState<InteractiveViewer2> createState() => _InteractiveViewer2State();
+  BetterInteractiveViewerState<InteractiveViewer2> createState() =>
+      _InteractiveViewer2State();
 }
 
-class _InteractiveViewer2State extends BetterInteractiveViewerState<InteractiveViewer2> {
+class _InteractiveViewer2State
+    extends BetterInteractiveViewerState<InteractiveViewer2> {
   @override
   Widget buildUnKeyedChild(BuildContext context) {
     return widget.child;
   }
+
+  @override
+  Size? get overrideSize => null;
 }

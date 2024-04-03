@@ -15,7 +15,7 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
 
   /// What should happen when the user double taps to zoom out.
   final DoubleTapZoomOutBehaviour doubleTapZoomOutBehaviour;
-  
+
   /// How to clip the content.
   final Clip clipBehavior;
 
@@ -45,9 +45,8 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
   BetterInteractiveViewerState<BetterInteractiveViewer> createState();
 }
 
-abstract class BetterInteractiveViewerState <T extends BetterInteractiveViewer>
+abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
     extends BetterInteractiveViewerBaseState<T> {
-  
   /// Gets the child. Child gets wrapped in a KeyedSubtree in [buildChild].
   Widget buildUnKeyedChild(BuildContext context);
 
@@ -59,12 +58,19 @@ abstract class BetterInteractiveViewerState <T extends BetterInteractiveViewer>
     );
   }
 
+  /// If not null, overrides the size of the child.
+  Size? get overrideSize;
+
+  @override
+  Size? get realChildSize => overrideSize ?? super.realChildSize;
+
   @override
   Widget buildTransformAndScrollbars(BuildContext context, Widget child) {
     return TransformAndScrollbarsWidget(
       scrollbarController: scrollbarController,
       transform: transformForRender,
       onResize: () => Future.microtask(afterResize),
+      overrideSize: overrideSize,
       child: child,
     );
   }
@@ -85,7 +91,7 @@ abstract class BetterInteractiveViewerState <T extends BetterInteractiveViewer>
   @override
   DoubleTapZoomOutBehaviour get doubleTapZoomOutBehaviour =>
       widget.doubleTapZoomOutBehaviour;
-  
+
   @override
   Widget build(BuildContext context) {
     return ClipRect(

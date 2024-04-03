@@ -16,6 +16,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     RenderBox? child,
     TransformScrollbarController? scrollbarController,
     Function()? onResize,
+    Size? overrideSize,
   }) : super(child) {
     this.transform = transform;
     this.alignment = alignment;
@@ -23,6 +24,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     this.origin = origin;
     this.onResize = onResize;
     this.scrollbarController = scrollbarController;
+    this.overrideSize = overrideSize;
   }
 
   /// The origin of the coordinate system (relative to the upper left corner of
@@ -40,6 +42,16 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     _origin = value;
     markNeedsPaint();
     markNeedsSemanticsUpdate();
+  }
+
+  Size? get overrideSize => _overrideSize;
+  Size? _overrideSize;
+  set overrideSize(Size? value) {
+    if (_overrideSize == value) {
+      return;
+    }
+    _overrideSize = value;
+    markNeedsLayout();
   }
 
   /// The alignment of the origin, relative to the size of the box.
@@ -138,11 +150,15 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
   Size? _lastSize;
   @override
   void performLayout() {
+    BoxConstraints constraints = this.constraints;
     Size s = constraints.biggest;
+    if (_overrideSize != null) {
+      constraints = BoxConstraints.tight(_overrideSize!);
+    }
     child?.layout(constraints);
     size = s;
     if (_lastSize != s) {
-      _lastSize = size;
+      _lastSize = s;
       onResize?.call();
     }
   }
