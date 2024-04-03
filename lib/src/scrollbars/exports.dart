@@ -1,4 +1,4 @@
-library interactive_viewer_2;
+library interactive_viewer_2_src;
 
 export 'transform_scrollbar_controller.dart';
 export 'auto_platform_scrollbar_controller.dart';

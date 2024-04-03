@@ -1,4 +1,4 @@
-library interactive_viewer_2;
+library interactive_viewer_2_src;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';

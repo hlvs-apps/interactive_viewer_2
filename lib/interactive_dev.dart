@@ -1,4 +1,4 @@
-library interactive_viewer_2;
+library interactive_viewer_2_dev;
 
 export 'src/better_interactive_viewer.dart';
 export 'src/better_interactive_viewer_base.dart';

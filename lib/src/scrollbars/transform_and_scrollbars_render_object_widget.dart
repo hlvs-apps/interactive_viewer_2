@@ -1,4 +1,4 @@
-library interactive_viewer_2;
+library interactive_viewer_2_src;
 //Copied from RenderTransform in flutter source code
 
 import 'package:flutter/rendering.dart';

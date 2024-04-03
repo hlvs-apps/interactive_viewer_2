@@ -1,4 +1,4 @@
-library interactive_viewer_2;
+library interactive_viewer_2_src;
 
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
