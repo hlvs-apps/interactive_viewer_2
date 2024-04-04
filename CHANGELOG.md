@@ -6,3 +6,6 @@
 
 ## 0.0.3
  * Maybe better documentation
+
+## 0.0.4
+ * Better performance while rebuilding due to transformation changes

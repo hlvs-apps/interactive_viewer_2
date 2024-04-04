@@ -47,6 +47,10 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
 
 abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
     extends BetterInteractiveViewerBaseState<T> {
+  /// Used to notify to rebuild the the transform without rebuilding the child and the listeners.
+  @protected
+  final RebuildNotifier rebuildNotifier = RebuildNotifier();
+
   /// Gets the child. Child gets wrapped in a KeyedSubtree in [buildChild].
   Widget buildUnKeyedChild(BuildContext context);
 
@@ -64,14 +68,40 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
   @override
   Size? get realChildSize => overrideSize ?? super.realChildSize;
 
+  /// Gets called every time the transform changes. Can be used to a widget over
+  /// the scrollbars and the transformed widget, e.g. a indicator for the zoom.
+  ///
+  /// Instead of overriding [buildTransformAndScrollbars], consider overriding
+  /// this method.
+  ///
+  /// The default implementation just returns the child.
+  Widget buildAroundTransformAndScrollbar(BuildContext context, Widget child) {
+    return child;
+  }
+
+  /// Gets called every time the transform changes.
+  /// The default implementation returns a [ListenableBuilder] that listens to
+  /// the [rebuildNotifier] and rebuilds the scrollbars and the transform, but
+  /// not the child.
+  ///
+  /// Instead of overriding this method, consider overriding
+  /// [buildAroundTransformAndScrollbar].
   @override
   Widget buildTransformAndScrollbars(BuildContext context, Widget child) {
-    return TransformAndScrollbarsWidget(
-      scrollbarController: scrollbarController,
-      transform: transformForRender,
-      onResize: () => Future.microtask(afterResize),
-      overrideSize: overrideSize,
-      child: child,
+    return ListenableBuilder(
+      listenable: rebuildNotifier,
+      builder: (context, c) {
+        return buildAroundTransformAndScrollbar(
+          context,
+          TransformAndScrollbarsWidget(
+            scrollbarController: scrollbarController,
+            transform: transformForRender,
+            onResize: () => Future.microtask(afterResize),
+            overrideSize: overrideSize,
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -85,7 +115,7 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
 
   @override
   void updateTransform() {
-    setState(() {});
+    rebuildNotifier.notify();
   }
 
   @override
@@ -98,5 +128,11 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
       clipBehavior: widget.clipBehavior,
       child: super.build(context),
     );
+  }
+}
+
+class RebuildNotifier with ChangeNotifier {
+  void notify() {
+    notifyListeners();
   }
 }
