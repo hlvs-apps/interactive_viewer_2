@@ -9,3 +9,6 @@
 
 ## 0.0.4
  * Better performance while rebuilding due to transformation changes
+
+## 0.0.5
+ * Bugfix: now disposing a resource correctly

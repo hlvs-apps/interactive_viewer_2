@@ -62,6 +62,12 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
     );
   }
 
+  @override
+  void dispose() {
+    rebuildNotifier.dispose();
+    super.dispose();
+  }
+
   /// If not null, overrides the size of the child.
   Size? get overrideSize;
 
