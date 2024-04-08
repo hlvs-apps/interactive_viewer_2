@@ -527,6 +527,7 @@ class ExtendedTransformScrollbarController
   @protected
   bool get showScrollbarV => thumbVisibility ?? false;
 
+  @protected
   bool get showScrollbarH => thumbVisibility ?? false;
 
   bool get _showTrackV => showScrollbarV && (trackVisibilityV ?? false);

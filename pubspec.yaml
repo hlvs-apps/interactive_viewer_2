@@ -1,6 +1,6 @@
 name: interactive_viewer_2
 description: "A Flutter InteractiveViewer replacement with support for scrollbars, double-tap zoom and overall improved zoom handling"
-version: 0.0.5
+version: 0.0.6
 homepage: https://github.com/hlvs-apps/interactive_viewer_2
 
 

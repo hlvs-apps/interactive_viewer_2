@@ -12,3 +12,6 @@
 
 ## 0.0.5
  * Bugfix: now disposing a resource correctly
+
+## 0.0.6
+ * Bugfix: showing scrollbars on web correctly

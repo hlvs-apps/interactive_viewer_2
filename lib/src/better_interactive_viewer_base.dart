@@ -997,12 +997,22 @@ abstract class BetterInteractiveViewerBaseState<
         }
 
         Offset scrollDelta = event.scrollDelta;
-        //Shift pressed, so scroll horizontally with the mousewheel
-        if (event.kind != PointerDeviceKind.trackpad && _shiftPressed) {
-          scrollDelta = Offset(scrollDelta.dy, scrollDelta.dx);
-          scrollbarController?.onScrollStartHorizontal();
+        //TODO add axis alignement
+        if (event.kind == PointerDeviceKind.trackpad) {
+          if (scrollDelta.dx != 0) {
+            scrollbarController?.onScrollStartHorizontal();
+          }
+          if (scrollDelta.dy != 0) {
+            scrollbarController?.onScrollStartVertical();
+          }
         } else {
-          scrollbarController?.onScrollStartVertical();
+          //Shift pressed, so scroll horizontally with the mousewheel
+          if (_shiftPressed) {
+            scrollDelta = Offset(scrollDelta.dy, scrollDelta.dx);
+            scrollbarController?.onScrollStartHorizontal();
+          } else {
+            scrollbarController?.onScrollStartVertical();
+          }
         }
 
         final Offset localDelta = PointerEvent.transformDeltaViaPositions(
