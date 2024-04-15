@@ -31,3 +31,12 @@
   auto_platform_scrollbar_controller.dart in a new class "AutoPlatformScrollbarController" that provides all the
   necessary methods needed to configure and paint the scrollbars and delegating to the platform specific scrollbar
   implementation. To add own paint calls, override the "void paint" method in the AutoPlatformScrollbarController class.
+
+## 0.0.8
+
+* It's now easier to add own paint calls as described in previous version:
+  Now the "BetterInteractiveViewerBaseState" class provides a method "ScrollbarControllerEncapsulation
+  getScrollbarController({required TickerProvider vsync,required TransformScrollbarWidgetInterface controlInterface})" 
+  that gets called by the "setScrollbarControllers" method. This
+  allows to easily override the "AutoPlatformScrollbarController" class and provide an own implementation of the paint
+  method, without the need to write an own configuration for the scrollbar controller.

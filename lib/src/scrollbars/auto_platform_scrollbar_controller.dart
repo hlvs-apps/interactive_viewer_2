@@ -8,27 +8,13 @@ import 'transform_scrollbar_controller.dart';
 import 'material_transform_scrollbar.dart';
 import 'cupertino_transform_scrollbar.dart';
 
-class AutoPlatformScrollbarController extends BaseTransformScrollbarController
+class ScrollbarControllerEncapsulation extends BaseTransformScrollbarController
     implements ExtendedTransformScrollbarControllerFunctionality {
   final RawTransformScrollbarController realController;
 
-  AutoPlatformScrollbarController({
-    required TickerProvider vsync,
-    required TransformScrollbarWidgetInterface controlInterface,
-    double? thickness,
-    Radius? radius,
-    bool? trackVisibility,
-    bool? interactive,
-    bool? thumbVisibility,
-  }) : realController = getPlatformScrollbarController(
-          vsync: vsync,
-          controlInterface: controlInterface,
-          thickness: thickness,
-          radius: radius,
-          trackVisibility: trackVisibility,
-          interactive: interactive,
-          thumbVisibility: thumbVisibility,
-        ) {
+  ScrollbarControllerEncapsulation({
+    required this.realController,
+  }) {
     realController.addListener(onRealControllerNotification);
   }
 
@@ -114,6 +100,28 @@ class AutoPlatformScrollbarController extends BaseTransformScrollbarController
   void handleHover(PointerHoverEvent event) {
     realController.handleHover(event);
   }
+}
+
+class AutoPlatformScrollbarController extends ScrollbarControllerEncapsulation {
+  AutoPlatformScrollbarController({
+    required TickerProvider vsync,
+    required TransformScrollbarWidgetInterface controlInterface,
+    double? thickness,
+    Radius? radius,
+    bool? trackVisibility,
+    bool? interactive,
+    bool? thumbVisibility,
+  }) : super(
+          realController: getPlatformScrollbarController(
+            vsync: vsync,
+            controlInterface: controlInterface,
+            thickness: thickness,
+            radius: radius,
+            trackVisibility: trackVisibility,
+            interactive: interactive,
+            thumbVisibility: thumbVisibility,
+          ),
+        );
 }
 
 RawTransformScrollbarController getPlatformScrollbarController({

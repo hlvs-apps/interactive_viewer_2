@@ -313,7 +313,7 @@ abstract class BetterInteractiveViewerBaseState<
   GestureType? gestureType;
 
   @protected
-  AutoPlatformScrollbarController? scrollbarController;
+  ScrollbarControllerEncapsulation? scrollbarController;
 
   /// Set this value if the child has a different size than returned by its render box
   @protected
@@ -1295,6 +1295,19 @@ abstract class BetterInteractiveViewerBaseState<
     ServicesBinding.instance.keyboard.addHandler(onKey);
   }
 
+  ScrollbarControllerEncapsulation getScrollbarController({
+    required TickerProvider vsync,
+    required TransformScrollbarWidgetInterface controlInterface,
+  }) {
+    return AutoPlatformScrollbarController(
+        vsync: vsync, controlInterface: controlInterface);
+  }
+
+  /// Set the scrollbar controllers.
+  ///
+  /// Instead of overriding this function, consider to override
+  /// [getScrollbarController] instead to provide a custom scrollbar controller,
+  /// without the need to provide an own [TransformScrollbarWidgetInterface].
   void setScrollbarControllers() {
     if (!widget.showScrollbars) {
       if (scrollbarController != null) {
@@ -1303,7 +1316,7 @@ abstract class BetterInteractiveViewerBaseState<
       scrollbarController = null;
       return;
     }
-    scrollbarController ??= AutoPlatformScrollbarController(
+    scrollbarController ??= getScrollbarController(
       vsync: this,
       controlInterface: CustomTransformScrollbarWidgetInterface(
         fgetTransform: () => transformationController!.value,
@@ -1407,7 +1420,7 @@ abstract class BetterInteractiveViewerBaseState<
   ///Instead of overriding this function, override [buildChild] so that all gesture detectors can be set up automatically.
   @override
   Widget build(BuildContext context) {
-    AutoPlatformScrollbarController? scrollbarController =
+    ScrollbarControllerEncapsulation? scrollbarController =
         this.scrollbarController;
     scrollbarController?.updateScrollbarPainters();
     Widget child = buildChild(context);
