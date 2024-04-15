@@ -19,8 +19,27 @@ const double _kScrollbarThickness = 6.0;
 const Duration _kScrollbarFadeDuration = Duration(milliseconds: 300);
 const Duration _kScrollbarTimeToFade = Duration(milliseconds: 600);
 
-class TransformScrollbarController with ChangeNotifier {
+abstract class BaseTransformScrollbarController extends ChangeNotifier {
+  void update(Matrix4 transform, Size viewport, Size content);
+
+  void paint(PaintingContext context, Size viewport, {Offset? origin});
+
+  PublicScrollbarPainter get verticalScrollbar;
+
+  PublicScrollbarPainter get horizontalScrollbar;
+
+  void updateAndPaint(
+      PaintingContext context, Matrix4 transform, Size viewport, Size content,
+      {Offset? origin}) {
+    update(transform, viewport, content);
+    paint(context, viewport, origin: origin);
+  }
+}
+
+class TransformScrollbarController extends BaseTransformScrollbarController {
+  @override
   final PublicScrollbarPainter verticalScrollbar;
+  @override
   final PublicScrollbarPainter horizontalScrollbar;
 
   TransformScrollbarController({
@@ -81,6 +100,7 @@ class TransformScrollbarController with ChangeNotifier {
     );
   }
 
+  @override
   void update(Matrix4 transform, Size viewport, Size content) {
     verticalScrollbar.update(
       getScrollMetricsV(transform, viewport, content),
@@ -94,6 +114,7 @@ class TransformScrollbarController with ChangeNotifier {
     );
   }
 
+  @override
   void paint(PaintingContext context, Size viewport, {Offset? origin}) {
     Canvas canvas = context.canvas;
     if (origin != null) {
@@ -105,13 +126,6 @@ class TransformScrollbarController with ChangeNotifier {
     if (origin != null) {
       canvas.restore();
     }
-  }
-
-  void updateAndPaint(
-      PaintingContext context, Matrix4 transform, Size viewport, Size content,
-      {Offset? origin}) {
-    update(transform, viewport, content);
-    paint(context, viewport, origin: origin);
   }
 }
 
@@ -184,8 +198,46 @@ class SimpleTransformScrollbarController extends TransformScrollbarController {
   }
 }
 
+abstract class ExtendedTransformScrollbarControllerFunctionality {
+  void onScrollStart();
+
+  void onScrollStartHorizontal();
+
+  void onScrollStartVertical();
+
+  void onScrollEnd();
+
+  /// Can be overridden to update the scrollbar when the parents widget dependencies change.
+  void onDidChangeDependencies();
+
+  /// This method is responsible for configuring the [horizontalScrollbar] and [verticalScrollbar]
+  /// according to the [widget]'s properties and any inherited widgets the
+  /// painter depends on, like [Directionality] and [MediaQuery].
+  void updateScrollbarPainters();
+
+  Map<Type, GestureRecognizerFactory> getGesturesVertical(BuildContext context);
+
+  Map<Type, GestureRecognizerFactory> getGesturesHorizontal(
+      BuildContext context);
+
+  /// Overridable getter to indicate is gestures should be enabled on the
+  /// scrollbar.
+  ///
+  /// When false, the scrollbar will not respond to gesture or hover events,
+  /// and will allow to click through it.
+  ///
+  /// Subclasses can override this getter to make its value depend on an inherited
+  /// theme.
+  bool get enableGestures;
+
+  void handleHoverExit(PointerExitEvent event);
+
+  void handleHover(PointerHoverEvent event);
+}
+
 class ExtendedTransformScrollbarController
-    extends SimpleTransformScrollbarController {
+    extends SimpleTransformScrollbarController
+    implements ExtendedTransformScrollbarControllerFunctionality {
   ExtendedTransformScrollbarController({
     required this.fadeoutAnimationControllerVertical,
     required this.fadeoutAnimationControllerHorizontal,
@@ -548,6 +600,7 @@ class ExtendedTransformScrollbarController
   /// See also:
   ///
   ///   * [RawScrollbar.interactive], which overrides the default behavior.
+  @override
   bool get enableGestures => interactive ?? true;
 
   /// This method is responsible for configuring the [horizontalScrollbar] and [verticalScrollbar]
@@ -558,6 +611,7 @@ class ExtendedTransformScrollbarController
   ///
   /// See also:
   ///  * [updateScrollbarPainter], which is called by this methods default implementation for each [scrollbarPainter].
+  @override
   void updateScrollbarPainters() {
     updateScrollbarPainter(true);
     updateScrollbarPainter(false);
@@ -869,16 +923,19 @@ class ExtendedTransformScrollbarController
     );
   }
 
+  @override
   void onScrollStart() {
     onScrollStartVertical();
     onScrollStartHorizontal();
   }
 
+  @override
   void onScrollEnd() {
     onScrollEndVertical();
     onScrollEndHorizontal();
   }
 
+  @override
   void onScrollStartVertical() {
     if (fadeoutAnimationControllerVertical.status != AnimationStatus.forward &&
         fadeoutAnimationControllerVertical.status !=
@@ -888,6 +945,7 @@ class ExtendedTransformScrollbarController
     _fadeoutTimerV?.cancel();
   }
 
+  @override
   void onScrollStartHorizontal() {
     if (fadeoutAnimationControllerHorizontal.status !=
             AnimationStatus.forward &&
@@ -1010,6 +1068,7 @@ class ExtendedTransformScrollbarController
     }
   }
 
+  @override
   void handleHover(PointerHoverEvent event) {
     handleHoverV(event);
     handleHoverH(event);
@@ -1031,12 +1090,14 @@ class ExtendedTransformScrollbarController
     _maybeStartFadeoutTimer(vertical: false);
   }
 
+  @override
   @mustCallSuper
   void handleHoverExit(PointerExitEvent event) {
     handleHoverExitV(event);
     handleHoverExitH(event);
   }
 
+  @override
   Map<Type, GestureRecognizerFactory> getGesturesVertical(
       BuildContext context) {
     final Map<Type, GestureRecognizerFactory> gestures =
@@ -1080,6 +1141,7 @@ class ExtendedTransformScrollbarController
     return gestures;
   }
 
+  @override
   Map<Type, GestureRecognizerFactory> getGesturesHorizontal(
       BuildContext context) {
     final Map<Type, GestureRecognizerFactory> gestures =
@@ -1122,6 +1184,9 @@ class ExtendedTransformScrollbarController
 
     return gestures;
   }
+
+  @override
+  void onDidChangeDependencies() {}
 }
 
 abstract class TransformScrollbarWidgetInterface {
@@ -1284,9 +1349,6 @@ class RawTransformScrollbarController
 
   /// The [TickerProvider] for the Fade in and out animations of the scrollbars.
   final TickerProvider vsync;
-
-  /// Can be overridden to update the scrollbar when the parents widget dependencies change.
-  void onDidChangeDependencies() {}
 
   @override
   void dispose() {

@@ -313,7 +313,7 @@ abstract class BetterInteractiveViewerBaseState<
   GestureType? gestureType;
 
   @protected
-  RawTransformScrollbarController? scrollbarController;
+  AutoPlatformScrollbarController? scrollbarController;
 
   /// Set this value if the child has a different size than returned by its render box
   @protected
@@ -1303,7 +1303,7 @@ abstract class BetterInteractiveViewerBaseState<
       scrollbarController = null;
       return;
     }
-    scrollbarController ??= getPlatformScrollbarController(
+    scrollbarController ??= AutoPlatformScrollbarController(
       vsync: this,
       controlInterface: CustomTransformScrollbarWidgetInterface(
         fgetTransform: () => transformationController!.value,
@@ -1407,7 +1407,7 @@ abstract class BetterInteractiveViewerBaseState<
   ///Instead of overriding this function, override [buildChild] so that all gesture detectors can be set up automatically.
   @override
   Widget build(BuildContext context) {
-    ExtendedTransformScrollbarController? scrollbarController =
+    AutoPlatformScrollbarController? scrollbarController =
         this.scrollbarController;
     scrollbarController?.updateScrollbarPainters();
     Widget child = buildChild(context);

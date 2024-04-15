@@ -20,7 +20,7 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
   });
 
   /// The scrollbars to paint on the child.
-  final TransformScrollbarController? scrollbarController;
+  final BaseTransformScrollbarController? scrollbarController;
 
   /// The matrix to transform the child by during painting.
   final Matrix4 transform;

@@ -14,7 +14,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     TextDirection? textDirection,
     this.transformHitTests = true,
     RenderBox? child,
-    TransformScrollbarController? scrollbarController,
+    BaseTransformScrollbarController? scrollbarController,
     Function()? onResize,
     Size? overrideSize,
   }) : super(child) {
@@ -122,10 +122,11 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     markNeedsSemanticsUpdate();
   }
 
-  TransformScrollbarController? get scrollbarController => _scrollbarController;
-  TransformScrollbarController? _scrollbarController;
+  BaseTransformScrollbarController? get scrollbarController =>
+      _scrollbarController;
+  BaseTransformScrollbarController? _scrollbarController;
 
-  set scrollbarController(TransformScrollbarController? value) {
+  set scrollbarController(BaseTransformScrollbarController? value) {
     if (_scrollbarController == value) {
       return;
     }
