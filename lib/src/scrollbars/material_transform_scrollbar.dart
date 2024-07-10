@@ -88,9 +88,9 @@ class MaterialScrollbarTransformController
       _scrollbarTheme.trackVisibility?.resolve(_statesH) ??
       false;
 
-  MaterialStateProperty<bool> get _trackVisibilityV =>
-      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.hovered) && _showTrackOnHoverV) {
+  WidgetStateProperty<bool> get _trackVisibilityV =>
+      WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+        if (states.contains(WidgetState.hovered) && _showTrackOnHoverV) {
           return true;
         }
         return trackVisibilityV ??
@@ -98,9 +98,9 @@ class MaterialScrollbarTransformController
             false;
       });
 
-  MaterialStateProperty<bool> get _trackVisibilityH =>
-      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.hovered) && _showTrackOnHoverH) {
+  WidgetStateProperty<bool> get _trackVisibilityH =>
+      WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+        if (states.contains(WidgetState.hovered) && _showTrackOnHoverH) {
           return true;
         }
         return trackVisibilityH ??
@@ -108,17 +108,17 @@ class MaterialScrollbarTransformController
             false;
       });
 
-  Set<MaterialState> get _statesV => <MaterialState>{
-        if (_dragIsActiveV) MaterialState.dragged,
-        if (_hoverIsActiveV) MaterialState.hovered,
+  Set<WidgetState> get _statesV => <WidgetState>{
+        if (_dragIsActiveV) WidgetState.dragged,
+        if (_hoverIsActiveV) WidgetState.hovered,
       };
 
-  Set<MaterialState> get _statesH => <MaterialState>{
-        if (_dragIsActiveH) MaterialState.dragged,
-        if (_hoverIsActiveH) MaterialState.hovered,
+  Set<WidgetState> get _statesH => <WidgetState>{
+        if (_dragIsActiveH) WidgetState.dragged,
+        if (_hoverIsActiveH) WidgetState.hovered,
       };
 
-  MaterialStateProperty<Color> getThumbColor({required bool isVertical}) {
+  WidgetStateProperty<Color> getThumbColor({required bool isVertical}) {
     final Color onSurface = _colorScheme.onSurface;
     final Brightness brightness = _colorScheme.brightness;
     late Color dragColor;
@@ -139,8 +139,8 @@ class MaterialScrollbarTransformController
             : onSurface.withOpacity(0.3);
     }
 
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-      if (states.contains(MaterialState.dragged)) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+      if (states.contains(WidgetState.dragged)) {
         return _scrollbarTheme.thumbColor?.resolve(states) ?? dragColor;
       }
 
@@ -166,10 +166,10 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<Color> get _trackColorV {
+  WidgetStateProperty<Color> get _trackColorV {
     final Color onSurface = _colorScheme.onSurface;
     final Brightness brightness = _colorScheme.brightness;
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (showScrollbarV && _trackVisibilityV.resolve(states)) {
         return _scrollbarTheme.trackColor?.resolve(states) ??
             (brightness == Brightness.light
@@ -180,10 +180,10 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<Color> get _trackColorH {
+  WidgetStateProperty<Color> get _trackColorH {
     final Color onSurface = _colorScheme.onSurface;
     final Brightness brightness = _colorScheme.brightness;
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (showScrollbarH && _trackVisibilityH.resolve(states)) {
         return _scrollbarTheme.trackColor?.resolve(states) ??
             (brightness == Brightness.light
@@ -194,10 +194,10 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<Color> get _trackBorderColorV {
+  WidgetStateProperty<Color> get _trackBorderColorV {
     final Color onSurface = _colorScheme.onSurface;
     final Brightness brightness = _colorScheme.brightness;
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (showScrollbarV && _trackVisibilityV.resolve(states)) {
         return _scrollbarTheme.trackBorderColor?.resolve(states) ??
             (brightness == Brightness.light
@@ -208,10 +208,10 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<Color> get _trackBorderColorH {
+  WidgetStateProperty<Color> get _trackBorderColorH {
     final Color onSurface = _colorScheme.onSurface;
     final Brightness brightness = _colorScheme.brightness;
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (showScrollbarH && _trackVisibilityH.resolve(states)) {
         return _scrollbarTheme.trackBorderColor?.resolve(states) ??
             (brightness == Brightness.light
@@ -222,9 +222,9 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<double> get _thicknessV {
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-      if (states.contains(MaterialState.hovered) &&
+  WidgetStateProperty<double> get _thicknessV {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+      if (states.contains(WidgetState.hovered) &&
           _trackVisibilityV.resolve(states)) {
         return _scrollbarTheme.thickness?.resolve(states) ??
             _kScrollbarThicknessWithTrack;
@@ -236,9 +236,9 @@ class MaterialScrollbarTransformController
     });
   }
 
-  MaterialStateProperty<double> get _thicknessH {
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-      if (states.contains(MaterialState.hovered) &&
+  WidgetStateProperty<double> get _thicknessH {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+      if (states.contains(WidgetState.hovered) &&
           _trackVisibilityH.resolve(states)) {
         return _scrollbarTheme.thickness?.resolve(states) ??
             _kScrollbarThicknessWithTrack;

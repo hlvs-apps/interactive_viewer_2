@@ -44,3 +44,7 @@
 ## 0.0.9
 
 * Bugfix for animation controllers disposal and better documentation
+
+## 0.0.10
+
+* Upgraded deprecated Code

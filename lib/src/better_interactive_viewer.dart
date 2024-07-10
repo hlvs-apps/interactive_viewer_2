@@ -72,8 +72,8 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
   @override
   Size? get realChildSize => overrideSize ?? super.realChildSize;
 
-  /// Gets called every time the transform changes. Can be used to a widget over
-  /// the scrollbars and the transformed widget, e.g. a indicator for the zoom.
+  /// Gets called every time the transform changes. Can be used to display a widget
+  /// over the scrollbars and the transformed widget, e.g. a indicator for the zoom.
   ///
   /// Instead of overriding [buildTransformAndScrollbars], consider overriding
   /// this method.

@@ -370,7 +370,7 @@ class ExtendedTransformScrollbarController
   /// {@endtemplate}
   ///
   /// Subclass [Scrollbar] can hide and show the scrollbar thumb in response to
-  /// [MaterialState]s by using [ScrollbarThemeData.thumbVisibility].
+  /// [WidgetState]s by using [ScrollbarThemeData.thumbVisibility].
   final bool? thumbVisibility;
 
   /// The [OutlinedBorder] of the scrollbar's thumb.
@@ -446,7 +446,7 @@ class ExtendedTransformScrollbarController
   /// {@endtemplate}
   ///
   /// Subclass [Scrollbar] can hide and show the scrollbar thumb in response to
-  /// [MaterialState]s by using [ScrollbarThemeData.trackVisibility].
+  /// [WidgetState]s by using [ScrollbarThemeData.trackVisibility].
   final bool? trackVisibilityV;
 
   final bool? trackVisibilityH;

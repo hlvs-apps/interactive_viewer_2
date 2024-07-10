@@ -1470,7 +1470,7 @@ abstract class BetterInteractiveViewerBaseState<
       child = GestureDetector(
         behavior: HitTestBehavior.opaque,
         // Necessary when panning off screen.
-        onScaleEnd: (onScaleEnd),
+        onScaleEnd: onScaleEnd,
         onScaleStart: onScaleStart,
         onScaleUpdate: onScaleUpdate,
         onDoubleTapDown:
