@@ -1,4 +1,3 @@
-library interactive_viewer_2_src;
 // Copied and modified from interactive viewer
 
 import 'dart:math' as math;

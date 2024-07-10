@@ -36,7 +36,11 @@
 
 * It's now easier to add own paint calls as described in previous version:
   Now the "BetterInteractiveViewerBaseState" class provides a method "ScrollbarControllerEncapsulation
-  getScrollbarController({required TickerProvider vsync,required TransformScrollbarWidgetInterface controlInterface})" 
+  getScrollbarController({required TickerProvider vsync,required TransformScrollbarWidgetInterface controlInterface})"
   that gets called by the "setScrollbarControllers" method. This
   allows to easily override the "AutoPlatformScrollbarController" class and provide an own implementation of the paint
   method, without the need to write an own configuration for the scrollbar controller.
+
+## 0.0.9
+
+* Bugfix for animation controllers disposal and better documentation

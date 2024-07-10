@@ -1,5 +1,3 @@
-library interactive_viewer_2_src;
-
 import 'dart:async';
 import 'dart:ui';
 
@@ -1183,6 +1181,15 @@ class ExtendedTransformScrollbarController
     );
 
     return gestures;
+  }
+
+  @override
+  void dispose() {
+    _fadeoutTimerV?.cancel();
+    _fadeoutTimerH?.cancel();
+    _fadeoutTimerV = null;
+    _fadeoutTimerH = null;
+    super.dispose();
   }
 
   @override

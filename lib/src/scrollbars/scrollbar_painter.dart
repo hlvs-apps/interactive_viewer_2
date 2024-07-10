@@ -1,4 +1,3 @@
-library interactive_viewer_2_src;
 // Copied from scrollbar.dart in flutter source code.
 // Only made one private method public, to get thumb extend for paging
 

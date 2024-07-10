@@ -1,5 +1,3 @@
-library interactive_viewer_2_src;
-
 import 'package:flutter/material.dart';
 import 'scrollbars/transform_and_scrollbars_widget.dart';
 import 'better_interactive_viewer_base.dart';
