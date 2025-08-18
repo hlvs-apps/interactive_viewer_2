@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:interactive_viewer_2/src/interactiveviewer_controller.dart';
 import 'scrollbars/auto_platform_scrollbar_controller.dart';
 import 'scrollbars/transform_scrollbar_controller.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4, Quad, Vector3;
@@ -129,7 +130,7 @@ abstract class BetterInteractiveViewerBase extends StatefulWidget {
   ///
   ///  * [ValueNotifier], the parent class of TransformationController.
   ///  * [TextEditingController] for an example of another similar pattern.
-  final TransformationController? transformationController;
+  final InteractiveViewer2Controller? transformationController;
 
   /// Allows the user to zoom out the child so that it is displayed smaller than the viewports width and height.
   final bool allowNonCoveringScreenZoom;
@@ -281,7 +282,7 @@ abstract class BetterInteractiveViewerBaseState<
         T extends BetterInteractiveViewerBase> extends State<T>
     with TickerProviderStateMixin {
   @protected
-  TransformationController? transformationController;
+  InteractiveViewer2Controller? transformationController;
 
   @protected
   final GlobalKey childKey = GlobalKey();
@@ -1287,7 +1288,7 @@ abstract class BetterInteractiveViewerBaseState<
     super.initState();
 
     transformationController =
-        widget.transformationController ?? TransformationController();
+        widget.transformationController ?? InteractiveViewer2Controller();
     transformationController!.addListener(updateTransform);
     controller = AnimationController(vsync: this);
     scaleController = AnimationController(vsync: this);
@@ -1365,7 +1366,7 @@ abstract class BetterInteractiveViewerBaseState<
     } else {
       if (widget.transformationController == null) {
         transformationController!.removeListener(updateTransform);
-        transformationController = TransformationController();
+        transformationController = InteractiveViewer2Controller();
         transformationController!.addListener(updateTransform);
       } else if (widget.transformationController !=
           oldWidget.transformationController) {
