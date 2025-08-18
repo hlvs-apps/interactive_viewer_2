@@ -20,7 +20,7 @@ class InteractiveViewer2 extends BetterInteractiveViewer {
     super.noMouseDragScroll,
     super.scaleFactor,
     super.doubleTapToZoom,
-    super.transformationController,
+    super.controller,
     super.nonCoveringZoomAlignmentHorizontal,
     super.nonCoveringZoomAlignmentVertical,
     super.doubleTapZoomOutBehaviour,

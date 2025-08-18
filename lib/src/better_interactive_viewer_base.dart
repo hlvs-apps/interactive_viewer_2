@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:interactive_viewer_2/src/interacti_veviewer_2_controller.dart';
 import 'scrollbars/auto_platform_scrollbar_controller.dart';
 import 'scrollbars/transform_scrollbar_controller.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4, Quad, Vector3;
@@ -28,7 +29,7 @@ abstract class BetterInteractiveViewerBase extends StatefulWidget {
     this.showScrollbars = true,
     this.noMouseDragScroll = true,
     this.scaleFactor = kDefaultMouseScrollToScaleFactor,
-    this.transformationController,
+    this.controller,
     this.doubleTapToZoom = true,
   })  : assert(minScale > 0),
         assert(interactionEndFrictionCoefficient > 0),
@@ -129,7 +130,7 @@ abstract class BetterInteractiveViewerBase extends StatefulWidget {
   ///
   ///  * [ValueNotifier], the parent class of TransformationController.
   ///  * [TextEditingController] for an example of another similar pattern.
-  final TransformationController? transformationController;
+  final InteractiveViewer2Controller? controller;
 
   /// Allows the user to zoom out the child so that it is displayed smaller than the viewports width and height.
   final bool allowNonCoveringScreenZoom;
@@ -281,7 +282,7 @@ abstract class BetterInteractiveViewerBaseState<
         T extends BetterInteractiveViewerBase> extends State<T>
     with TickerProviderStateMixin {
   @protected
-  TransformationController? transformationController;
+  InteractiveViewer2Controller? controller;
 
   @protected
   final GlobalKey childKey = GlobalKey();
@@ -295,7 +296,7 @@ abstract class BetterInteractiveViewerBaseState<
   @protected
   late Offset scaleAnimationFocalPoint;
   @protected
-  late AnimationController controller;
+  late AnimationController animationController;
   @protected
   late AnimationController scaleController;
   @protected
@@ -327,7 +328,7 @@ abstract class BetterInteractiveViewerBaseState<
   ///Realign the transformation controllers value after a nonCoveringZoom (child is smaller than viewport) to make sure it can be displayed correctly
   @protected
   void afterZoom() {
-    Matrix4 oldValue = transformationController!.value.clone();
+    Matrix4 oldValue = controller!.value.clone();
     Vector3 oldTranslation = oldValue.getTranslation();
     bool set = false;
     if (inNonCoveringZoomHorizontal) {
@@ -340,14 +341,14 @@ abstract class BetterInteractiveViewerBaseState<
     }
     if (set) {
       oldValue.setTranslation(oldTranslation);
-      transformationController!.value = oldValue;
+      controller!.value = oldValue;
     }
   }
 
   /// Cal this method after resize
   @protected
   void afterResize({bool forceUpdate = true}) {
-    Matrix4 transform = transformationController!.value;
+    Matrix4 transform = controller!.value;
     Vector3 translation = transform.getTranslation();
     Rect boundaryRect = childBoundaryRect;
     Rect viewport = widgetViewport;
@@ -389,7 +390,7 @@ abstract class BetterInteractiveViewerBaseState<
 
     if (changed) {
       transform = transform.clone()..setTranslation(translation);
-      transformationController!.value = transform;
+      controller!.value = transform;
     } else if (forceUpdate) {
       updateTransform();
     }
@@ -401,9 +402,9 @@ abstract class BetterInteractiveViewerBaseState<
     if (!widget.allowNonCoveringScreenZoom || childKey.currentContext == null) {
       inNonCoveringZoomHorizontal = false;
       inNonCoveringZoomVertical = false;
-      return transformationController!.value;
+      return controller!.value;
     }
-    Matrix4 transform = transformationController!.value;
+    Matrix4 transform = controller!.value;
     Rect boundaryRect = childBoundaryRect;
     Rect viewport = widgetViewport;
     double scale = transform.getScaleOnZAxis();
@@ -523,173 +524,6 @@ abstract class BetterInteractiveViewerBaseState<
     return Offset.zero & parentRenderBox.size;
   }
 
-  /// Return a new matrix representing the given matrix after applying the given
-  /// translation.
-  @protected
-  Matrix4 matrixTranslate(Matrix4 matrix, Offset translation) {
-    if (translation == Offset.zero) {
-      return matrix.clone();
-    }
-
-    late final Offset alignedTranslation;
-
-    if (currentAxis != null) {
-      switch (widget.panAxis) {
-        case PanAxis.horizontal:
-          alignedTranslation = alignAxis(translation, Axis.horizontal);
-        case PanAxis.vertical:
-          alignedTranslation = alignAxis(translation, Axis.vertical);
-        case PanAxis.aligned:
-          alignedTranslation = alignAxis(translation, currentAxis!);
-        case PanAxis.free:
-          alignedTranslation = translation;
-      }
-    } else {
-      alignedTranslation = translation;
-    }
-
-    final Matrix4 nextMatrix = matrix.clone()
-      ..translate(
-        alignedTranslation.dx,
-        alignedTranslation.dy,
-      );
-
-    // Transform the viewport to determine where its four corners will be after
-    // the child has been transformed.
-    final Quad nextViewport = transformViewport(nextMatrix, widgetViewport);
-
-    // If the boundaries are infinite, then no need to check if the translation
-    // fits within them.
-    if (childBoundaryRect.isInfinite) {
-      return nextMatrix;
-    }
-
-    // Expand the boundaries with rotation. This prevents the problem where a
-    // mismatch in orientation between the viewport and boundaries effectively
-    // limits translation. With this approach, all points that are visible with
-    // no rotation are visible after rotation.
-    final Quad boundariesAabbQuad = getAxisAlignedBoundingBoxWithRotation(
-      childBoundaryRect,
-      currentRotation,
-    );
-
-    // If the given translation fits completely within the boundaries, allow it.
-    final Offset offendingDistance =
-        exceedsBy(boundariesAabbQuad, nextViewport);
-    if (offendingDistance == Offset.zero) {
-      return nextMatrix;
-    }
-
-    // Desired translation goes out of bounds, so translate to the nearest
-    // in-bounds point instead.
-    final Offset nextTotalTranslation = getMatrixTranslation(nextMatrix);
-    final double currentScale = matrix.getScaleOnZAxis();
-    final Offset correctedTotalTranslation = Offset(
-      nextTotalTranslation.dx - offendingDistance.dx * currentScale,
-      nextTotalTranslation.dy - offendingDistance.dy * currentScale,
-    );
-    // TODO(justinmc): This needs some work to handle rotation properly. The
-    // idea is that the boundaries are axis aligned (boundariesAabbQuad), but
-    // calculating the translation to put the viewport inside that Quad is more
-    // complicated than this when rotated.
-    // https://github.com/flutter/flutter/issues/57698
-    final Matrix4 correctedMatrix = matrix.clone()
-      ..setTranslation(Vector3(
-        correctedTotalTranslation.dx,
-        correctedTotalTranslation.dy,
-        0.0,
-      ));
-
-    // Double check that the corrected translation fits.
-    final Quad correctedViewport =
-        transformViewport(correctedMatrix, widgetViewport);
-    final Offset offendingCorrectedDistance =
-        exceedsBy(boundariesAabbQuad, correctedViewport);
-    if (offendingCorrectedDistance == Offset.zero) {
-      return correctedMatrix;
-    }
-
-    // If the corrected translation doesn't fit in either direction, don't allow
-    // any translation at all. This happens when the viewport is larger than the
-    // entire boundary.
-    if (offendingCorrectedDistance.dx != 0.0 &&
-        offendingCorrectedDistance.dy != 0.0) {
-      return matrix.clone();
-    }
-
-    // Otherwise, allow translation in only the direction that fits. This
-    // happens when the viewport is larger than the boundary in one direction.
-    final Offset unidirectionalCorrectedTotalTranslation = Offset(
-      offendingCorrectedDistance.dx == 0.0 ? correctedTotalTranslation.dx : 0.0,
-      offendingCorrectedDistance.dy == 0.0 ? correctedTotalTranslation.dy : 0.0,
-    );
-    return matrix.clone()
-      ..setTranslation(Vector3(
-        unidirectionalCorrectedTotalTranslation.dx,
-        unidirectionalCorrectedTotalTranslation.dy,
-        0.0,
-      ));
-  }
-
-  // Return a new matrix representing the given matrix after applying the given
-  // scale.
-  @protected
-  Matrix4 matrixScale(Matrix4 matrix, double scale) {
-    if (scale == 1.0) {
-      return matrix.clone();
-    }
-    assert(scale != 0.0);
-
-    // Don't allow a scale that results in an overall scale beyond min/max
-    // scale.
-    final double currentScale =
-        transformationController!.value.getScaleOnZAxis();
-    final double totalScale = math.max(
-      currentScale * scale,
-      // Ensure that the scale cannot make the child so **small** that it can't fit //Korrigiert von der originalversion
-      // inside the boundaries (in either direction).
-      math.max(
-        widget.allowNonCoveringScreenZoom
-            ? widget.minScale
-            : (widgetViewport.width / childBoundaryRect.width),
-        widget.allowNonCoveringScreenZoom
-            ? widget.minScale
-            : (widgetViewport.height / childBoundaryRect.height),
-      ),
-    );
-    final double clampedTotalScale = clampDouble(
-      totalScale,
-      widget.minScale,
-      widget.maxScale,
-    );
-    Vector3 translation = matrix.getTranslation();
-    // If smaller than the viewport, set translation to 0
-    if (clampedTotalScale <
-        (widgetViewport.height / childBoundaryRect.height)) {
-      translation.y = 0;
-    }
-    final double clampedScale = clampedTotalScale / currentScale;
-    return matrix.clone()
-      ..setTranslation(translation)
-      ..scale(clampedScale);
-  }
-
-  /// Return a new matrix representing the given matrix after applying the given
-  /// rotation.
-  @protected
-  Matrix4 matrixRotate(Matrix4 matrix, double rotation, Offset focalPoint) {
-    if (rotation == 0) {
-      return matrix.clone();
-    }
-    final Offset focalPointScene = transformationController!.toScene(
-      focalPoint,
-    );
-    return matrix.clone()
-      ..translate(focalPointScene.dx, focalPointScene.dy)
-      ..rotateZ(-rotation)
-      ..translate(-focalPointScene.dx, -focalPointScene.dy);
-  }
-
   // Returns true if the given GestureType is enabled.
   @protected
   bool gestureIsSupported(GestureType? gestureType, {bool outer = false}) {
@@ -727,9 +561,9 @@ abstract class BetterInteractiveViewerBaseState<
 
   @protected
   void resetAnimation() {
-    if (controller.isAnimating) {
-      controller.stop();
-      controller.reset();
+    if (animationController.isAnimating) {
+      animationController.stop();
+      animationController.reset();
       animation?.removeListener(onAnimate);
       animation = null;
     }
@@ -750,8 +584,8 @@ abstract class BetterInteractiveViewerBaseState<
 
     gestureType = null;
     currentAxis = null;
-    scaleStart = transformationController!.value.getScaleOnZAxis();
-    referenceFocalPoint = transformationController!.toScene(
+    scaleStart = controller!.value.getScaleOnZAxis();
+    referenceFocalPoint = controller!.toScene(
       details.localFocalPoint,
     );
     rotationStart = currentRotation;
@@ -761,9 +595,9 @@ abstract class BetterInteractiveViewerBaseState<
   /// handled with GestureDetector's scale gesture.
   @protected
   void onScaleUpdate(ScaleUpdateDetails details, {bool inner = false}) {
-    final double scale = transformationController!.value.getScaleOnZAxis();
+    final double scale = controller!.value.getScaleOnZAxis();
     scaleAnimationFocalPoint = details.localFocalPoint;
-    final Offset focalPointScene = transformationController!.toScene(
+    final Offset focalPointScene = controller!.toScene(
       details.localFocalPoint,
     );
 
@@ -791,8 +625,8 @@ abstract class BetterInteractiveViewerBaseState<
         // previous call to _onScaleUpdate.
         final double desiredScale = scaleStart! * details.scale;
         final double scaleChange = desiredScale / scale;
-        transformationController!.value = matrixScale(
-          transformationController!.value,
+        controller!.value = controller!.matrixScale(
+          controller!.value,
           scaleChange,
         );
 
@@ -803,11 +637,11 @@ abstract class BetterInteractiveViewerBaseState<
         // BUT when the user zooms out of his controllable area, the focal
         // point should always be in the middle of the screen so that the
         // child stays centered.
-        final Offset focalPointSceneScaled = transformationController!.toScene(
+        final Offset focalPointSceneScaled = controller!.toScene(
           details.localFocalPoint,
         );
-        transformationController!.value = matrixTranslate(
-          transformationController!.value,
+        controller!.value = controller!.matrixTranslate(
+          controller!.value,
           focalPointSceneScaled - referenceFocalPoint!,
         );
 
@@ -816,7 +650,7 @@ abstract class BetterInteractiveViewerBaseState<
         // the translate came in contact with a boundary. In that case, update
         // _referenceFocalPoint so subsequent updates happen in relation to
         // the new effective focal point.
-        final Offset focalPointSceneCheck = transformationController!.toScene(
+        final Offset focalPointSceneCheck = controller!.toScene(
           details.localFocalPoint,
         );
         if (round(referenceFocalPoint!) != round(focalPointSceneCheck)) {
@@ -830,8 +664,8 @@ abstract class BetterInteractiveViewerBaseState<
         }
         scrollbarController?.onScrollStart();
         final double desiredRotation = rotationStart! + details.rotation;
-        transformationController!.value = matrixRotate(
-          transformationController!.value,
+        controller!.value = controller!.matrixRotate(
+          controller!.value,
           currentRotation - desiredRotation,
           details.localFocalPoint,
         );
@@ -865,11 +699,11 @@ abstract class BetterInteractiveViewerBaseState<
         // Translate so that the same point in the scene is underneath the
         // focal point before and after the movement.
         final Offset translationChange = focalPointScene - referenceFocalPoint!;
-        transformationController!.value = matrixTranslate(
-          transformationController!.value,
+        controller!.value = controller!.matrixTranslate(
+          controller!.value,
           translationChange,
         );
-        referenceFocalPoint = transformationController!.toScene(
+        referenceFocalPoint = controller!.toScene(
           details.localFocalPoint,
         );
     }
@@ -885,7 +719,7 @@ abstract class BetterInteractiveViewerBaseState<
 
     animation?.removeListener(onAnimate);
     scaleAnimation?.removeListener(onScaleAnimate);
-    controller.reset();
+    animationController.reset();
     scaleController.reset();
 
     if (!gestureIsSupported(gestureType, outer: outer)) {
@@ -900,8 +734,7 @@ abstract class BetterInteractiveViewerBaseState<
         scrollbarController?.onScrollEnd();
         return;
       }
-      final Vector3 translationVector =
-          transformationController!.value.getTranslation();
+      final Vector3 translationVector = controller!.value.getTranslation();
       final Offset translation =
           Offset(translationVector.x, translationVector.y);
       final FrictionSimulation frictionSimulationX = FrictionSimulation(
@@ -922,19 +755,20 @@ abstract class BetterInteractiveViewerBaseState<
         begin: translation,
         end: Offset(frictionSimulationX.finalX, frictionSimulationY.finalX),
       ).animate(CurvedAnimation(
-        parent: controller,
+        parent: animationController,
         curve: Curves.decelerate,
       ));
-      controller.duration = Duration(milliseconds: (tFinal * 1000).round());
+      animationController.duration =
+          Duration(milliseconds: (tFinal * 1000).round());
       animation!.addListener(onAnimate);
-      controller.forward();
+      animationController.forward();
     } else if (gestureType == GestureType.scale) {
       if (details.scaleVelocity.abs() < 0.1) {
         currentAxis = null;
         scrollbarController?.onScrollEnd();
         return;
       }
-      final double scale = transformationController!.value.getScaleOnZAxis();
+      final double scale = controller!.value.getScaleOnZAxis();
       final FrictionSimulation frictionSimulation = FrictionSimulation(
           widget.interactionEndFrictionCoefficient * widget.scaleFactor,
           scale,
@@ -1020,17 +854,16 @@ abstract class BetterInteractiveViewerBaseState<
           transform: event.transform,
         );
 
-        final Offset focalPointScene = transformationController!.toScene(
+        final Offset focalPointScene = controller!.toScene(
           event.localPosition,
         );
 
-        final Offset newFocalPointScene = transformationController!.toScene(
+        final Offset newFocalPointScene = controller!.toScene(
           event.localPosition - localDelta,
         );
 
-        transformationController!.value = matrixTranslate(
-            transformationController!.value,
-            newFocalPointScene - focalPointScene);
+        controller!.value = controller!.matrixTranslate(
+            controller!.value, newFocalPointScene - focalPointScene);
         scrollbarController?.onScrollEnd();
         return;
       }
@@ -1050,22 +883,22 @@ abstract class BetterInteractiveViewerBaseState<
     }
     scrollbarController?.onScrollStart();
 
-    final Offset focalPointScene = transformationController!.toScene(
+    final Offset focalPointScene = controller!.toScene(
       event.localPosition,
     );
 
-    transformationController!.value = matrixScale(
-      transformationController!.value,
+    controller!.value = controller!.matrixScale(
+      controller!.value,
       scaleChange,
     );
 
     // After scaling, translate such that the event's position is at the
     // same scene point before and after the scale.
-    final Offset focalPointSceneScaled = transformationController!.toScene(
+    final Offset focalPointSceneScaled = controller!.toScene(
       event.localPosition,
     );
-    transformationController!.value = matrixTranslate(
-      transformationController!.value,
+    controller!.value = controller!.matrixTranslate(
+      controller!.value,
       focalPointSceneScaled - focalPointScene,
     );
 
@@ -1082,8 +915,7 @@ abstract class BetterInteractiveViewerBaseState<
     if (doubleTapDetails == null) {
       return;
     }
-    final double currentScale =
-        transformationController!.value.getScaleOnZAxis();
+    final double currentScale = controller!.value.getScaleOnZAxis();
     final double pos1Scale = doubleTabZoomOutScale;
     const double pos2Scale = 1;
     final position = doubleTapDetails!.localPosition;
@@ -1127,26 +959,25 @@ abstract class BetterInteractiveViewerBaseState<
 
     animation?.removeListener(onAnimate);
     scaleAnimation?.removeListener(onScaleAnimate);
-    controller.reset();
+    animationController.reset();
     scaleController.reset();
 
     if (!noTranslation) {
       Offset translation = getMatrixTranslation(newMatrix);
-      Offset oldTranslation =
-          getMatrixTranslation(transformationController!.value);
+      Offset oldTranslation = getMatrixTranslation(controller!.value);
       animation = Tween<Offset>(
         begin: oldTranslation,
         end: translation,
       ).animate(CurvedAnimation(
-        parent: controller,
+        parent: animationController,
         curve: curve,
       ));
-      controller.duration = duration;
+      animationController.duration = duration;
     }
 
     if (!noZoom) {
       double scale = newMatrix.getScaleOnZAxis();
-      double oldScale = transformationController!.value.getScaleOnZAxis();
+      double oldScale = controller!.value.getScaleOnZAxis();
 
       scaleAnimation = Tween<double>(begin: oldScale, end: scale)
           .animate(CurvedAnimation(parent: scaleController, curve: curve));
@@ -1160,7 +991,7 @@ abstract class BetterInteractiveViewerBaseState<
     scrollbarController?.onScrollStart();
     if (!noTranslation) {
       animation!.addListener(onAnimate);
-      controller.forward();
+      animationController.forward();
     }
     if (!noZoom) {
       scaleAnimation!.addListener(onScaleAnimate);
@@ -1174,7 +1005,7 @@ abstract class BetterInteractiveViewerBaseState<
   @protected
   void afterAnimate() {
     if (setToAfterAnimate != null) {
-      transformationController!.value = setToAfterAnimate!;
+      controller!.value = setToAfterAnimate!;
       setToAfterAnimate = null;
     }
     scrollbarController?.onScrollEnd();
@@ -1187,8 +1018,8 @@ abstract class BetterInteractiveViewerBaseState<
       Matrix4? matrixZoomedNeedToApplyFocalPointTracking}) {
     Matrix4 newM;
     if (scale != null) {
-      newM = matrixScale(
-        transformationController!.value,
+      newM = controller!.matrixScale(
+        controller!.value,
         scale,
       );
     } else {
@@ -1196,7 +1027,7 @@ abstract class BetterInteractiveViewerBaseState<
     }
 
     if (position != null) {
-      Offset referenceFocalPoint = transformationController!.toScene(
+      Offset referenceFocalPoint = controller!.toScene(
         position,
       );
 
@@ -1211,7 +1042,7 @@ abstract class BetterInteractiveViewerBaseState<
         position,
       );
 
-      newM = matrixTranslate(
+      newM = controller!.matrixTranslate(
         newM,
         focalPointSceneScaled - referenceFocalPoint,
       );
@@ -1222,27 +1053,26 @@ abstract class BetterInteractiveViewerBaseState<
   /// Handle inertia drag animation.
   @protected
   void onAnimate() {
-    if (!controller.isAnimating) {
+    if (!animationController.isAnimating) {
       currentAxis = null;
       animation?.removeListener(onAnimate);
       animation = null;
-      controller.reset();
+      animationController.reset();
       afterAnimate();
       return;
     }
     // Translate such that the resulting translation is _animation.value.
-    final Vector3 translationVector =
-        transformationController!.value.getTranslation();
+    final Vector3 translationVector = controller!.value.getTranslation();
     final Offset translation = Offset(translationVector.x, translationVector.y);
-    final Offset translationScene = transformationController!.toScene(
+    final Offset translationScene = controller!.toScene(
       translation,
     );
-    final Offset animationScene = transformationController!.toScene(
+    final Offset animationScene = controller!.toScene(
       animation!.value,
     );
     final Offset translationChangeScene = animationScene - translationScene;
-    transformationController!.value = matrixTranslate(
-      transformationController!.value,
+    controller!.value = controller!.matrixTranslate(
+      controller!.value,
       translationChangeScene,
     );
   }
@@ -1260,12 +1090,12 @@ abstract class BetterInteractiveViewerBaseState<
     }
     final double desiredScale = scaleAnimation!.value;
     final double scaleChange =
-        desiredScale / transformationController!.value.getScaleOnZAxis();
-    final Offset referenceFocalPoint = transformationController!.toScene(
+        desiredScale / controller!.value.getScaleOnZAxis();
+    final Offset referenceFocalPoint = controller!.toScene(
       scaleAnimationFocalPoint,
     );
-    transformationController!.value = matrixScale(
-      transformationController!.value,
+    controller!.value = controller!.matrixScale(
+      controller!.value,
       scaleChange,
     );
 
@@ -1273,11 +1103,11 @@ abstract class BetterInteractiveViewerBaseState<
     // the same places in the scene. That means that the focal point of
     // the scale should be on the same place in the scene before and after
     // the scale.
-    final Offset focalPointSceneScaled = transformationController!.toScene(
+    final Offset focalPointSceneScaled = controller!.toScene(
       scaleAnimationFocalPoint,
     );
-    transformationController!.value = matrixTranslate(
-      transformationController!.value,
+    controller!.value = controller!.matrixTranslate(
+      controller!.value,
       focalPointSceneScaled - referenceFocalPoint,
     );
   }
@@ -1286,12 +1116,25 @@ abstract class BetterInteractiveViewerBaseState<
   void initState() {
     super.initState();
 
-    transformationController =
-        widget.transformationController ?? TransformationController();
-    transformationController!.addListener(updateTransform);
-    controller = AnimationController(vsync: this);
+    controller = widget.controller ?? InteractiveViewer2Controller();
+
+    controller!.addListener(updateTransform);
+    animationController = AnimationController(vsync: this);
     scaleController = AnimationController(vsync: this);
     ServicesBinding.instance.keyboard.addHandler(onKey);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller!.setValues(
+        panAxis: widget.panAxis,
+        currentAxis: currentAxis,
+        minScale: widget.minScale,
+        maxScale: widget.maxScale,
+        widgetViewport: widgetViewport,
+        currentRotation: currentRotation,
+        childBoundaryRect: childBoundaryRect,
+        allowNonCoveringScreenZoom: widget.allowNonCoveringScreenZoom,
+      );
+    });
   }
 
   ScrollbarControllerEncapsulation getScrollbarController({
@@ -1318,32 +1161,26 @@ abstract class BetterInteractiveViewerBaseState<
     scrollbarController ??= getScrollbarController(
       vsync: this,
       controlInterface: CustomTransformScrollbarWidgetInterface(
-        fgetTransform: () => transformationController!.value,
+        fgetTransform: () => controller!.value,
         fgetViewport: () => widgetViewport.size,
         fgetContent: () => childBoundaryRect.size,
         fcontext: () => context,
         fjumpVertical: (v) {
-          transformationController!.value = matrixTranslate(
-              transformationController!.value,
-              Offset(0, v / transformationController!.value.getScaleOnZAxis()));
+          controller!.value = controller!.matrixTranslate(controller!.value,
+              Offset(0, v / controller!.value.getScaleOnZAxis()));
         },
         fjumpHorizontal: (h) {
-          transformationController!.value = matrixTranslate(
-              transformationController!.value,
-              Offset(h / transformationController!.value.getScaleOnZAxis(), 0));
+          controller!.value = controller!.matrixTranslate(controller!.value,
+              Offset(h / controller!.value.getScaleOnZAxis(), 0));
         },
         fanimateVertical: (v, d, c) {
-          Matrix4 newTransform = matrixTranslate(
-              transformationController!.value,
-              Offset(
-                  0, -v / transformationController!.value.getScaleOnZAxis()));
+          Matrix4 newTransform = controller!.matrixTranslate(controller!.value,
+              Offset(0, -v / controller!.value.getScaleOnZAxis()));
           animateTo(newTransform, duration: d, curve: c, noZoom: true);
         },
         fanimateHorizontal: (h, d, c) {
-          Matrix4 newTransform = matrixTranslate(
-              transformationController!.value,
-              Offset(
-                  -h / transformationController!.value.getScaleOnZAxis(), 0));
+          Matrix4 newTransform = controller!.matrixTranslate(controller!.value,
+              Offset(-h / controller!.value.getScaleOnZAxis(), 0));
           animateTo(newTransform, duration: d, curve: c, noZoom: true);
         },
       ),
@@ -1355,23 +1192,32 @@ abstract class BetterInteractiveViewerBaseState<
     super.didUpdateWidget(oldWidget);
     // Handle all cases of needing to dispose and initialize
     // transformationControllers.
-    if (oldWidget.transformationController == null) {
-      if (widget.transformationController != null) {
-        transformationController!.removeListener(updateTransform);
-        transformationController!.dispose();
-        transformationController = widget.transformationController;
-        transformationController!.addListener(updateTransform);
+    if (oldWidget.controller == null) {
+      if (widget.controller != null) {
+        controller!.removeListener(updateTransform);
+        controller!.dispose();
+        controller = widget.controller;
+        controller!.addListener(updateTransform);
       }
     } else {
-      if (widget.transformationController == null) {
-        transformationController!.removeListener(updateTransform);
-        transformationController = TransformationController();
-        transformationController!.addListener(updateTransform);
-      } else if (widget.transformationController !=
-          oldWidget.transformationController) {
-        transformationController!.removeListener(updateTransform);
-        transformationController = widget.transformationController;
-        transformationController!.addListener(updateTransform);
+      if (widget.controller == null) {
+        controller!.removeListener(updateTransform);
+        controller = InteractiveViewer2Controller();
+        controller!.setValues(
+          panAxis: widget.panAxis,
+          currentAxis: currentAxis,
+          minScale: widget.minScale,
+          maxScale: widget.maxScale,
+          widgetViewport: widgetViewport,
+          currentRotation: currentRotation,
+          childBoundaryRect: childBoundaryRect,
+          allowNonCoveringScreenZoom: widget.allowNonCoveringScreenZoom,
+        );
+        controller!.addListener(updateTransform);
+      } else if (widget.controller != oldWidget.controller) {
+        controller!.removeListener(updateTransform);
+        controller = widget.controller;
+        controller!.addListener(updateTransform);
       }
     }
 
@@ -1389,11 +1235,11 @@ abstract class BetterInteractiveViewerBaseState<
 
   @override
   void dispose() {
-    controller.dispose();
+    animationController.dispose();
     scaleController.dispose();
-    transformationController!.removeListener(updateTransform);
-    if (widget.transformationController == null) {
-      transformationController!.dispose();
+    controller!.removeListener(updateTransform);
+    if (widget.controller == null) {
+      controller!.dispose();
     }
     scrollbarController?.dispose();
     ServicesBinding.instance.keyboard.removeHandler(onKey);

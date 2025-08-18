@@ -30,7 +30,7 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
     super.noMouseDragScroll,
     super.scaleFactor,
     super.doubleTapToZoom,
-    super.transformationController,
+    super.controller,
     this.nonCoveringZoomAlignmentHorizontal =
         HorizontalNonCoveringZoomAlign.middle,
     this.nonCoveringZoomAlignmentVertical = VerticalNonCoveringZoomAlign.middle,
