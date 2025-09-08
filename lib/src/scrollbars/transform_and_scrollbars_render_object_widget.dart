@@ -150,8 +150,8 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
   Size? _lastSize;
   @override
   void performLayout() {
-    BoxConstraints constraints = this.constraints;
-    Size s = constraints.biggest;
+    Size s = this.constraints.biggest;
+    BoxConstraints constraints = const BoxConstraints();
     if (_overrideSize != null) {
       constraints = BoxConstraints.tight(_overrideSize!);
     }
