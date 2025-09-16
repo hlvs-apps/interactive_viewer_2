@@ -20,6 +20,7 @@ class GridPresentation extends StatelessWidget {
     required this.vAlign,
     required this.doubleTapBehaviour,
     required this.constrained,
+    required this.useStandardViewer,
   });
 
   final Size viewport;
@@ -38,11 +39,48 @@ class GridPresentation extends StatelessWidget {
   final VerticalNonCoveringZoomAlign vAlign;
   final DoubleTapZoomOutBehaviour doubleTapBehaviour;
   final bool constrained;
+  final bool useStandardViewer;
 
   static const Size _contentSize = Size(3000, 2000);
 
   @override
   Widget build(BuildContext context) {
+    final content = SizedBox(
+      width: _contentSize.width,
+      height: _contentSize.height,
+      child: CustomPaint(
+        painter: _GridPainter(),
+        child: const Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: Colors.black12),
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                'Zoom & Pan\n(Double-tap to zoom, use mouse wheel with Ctrl to zoom)',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (useStandardViewer) {
+      // Use Flutter's standard InteractiveViewer (limited feature set)
+      return InteractiveViewer(
+        transformationController: transformationController,
+        panEnabled: panEnabled,
+        scaleEnabled: scaleEnabled,
+        minScale: minScale,
+        maxScale: maxScale,
+        panAxis: panAxis,
+        clipBehavior: Clip.hardEdge,
+        constrained: constrained,
+        child: content,
+      );
+    }
+
+    // Default: use InteractiveViewer2
     return InteractiveViewer2(
       transformationController: transformationController,
       allowNonCoveringScreenZoom: allowNonCovering,
@@ -60,25 +98,7 @@ class GridPresentation extends StatelessWidget {
       doubleTapZoomOutBehaviour: doubleTapBehaviour,
       clipBehavior: Clip.hardEdge,
       constrained: constrained,
-      child: SizedBox(
-        width: _contentSize.width,
-        height: _contentSize.height,
-        child: CustomPaint(
-          painter: _GridPainter(),
-          child: const Center(
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: Colors.black12),
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'Zoom & Pan\n(Double-tap to zoom, use mouse wheel with Ctrl to zoom)',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: content,
     );
   }
 }

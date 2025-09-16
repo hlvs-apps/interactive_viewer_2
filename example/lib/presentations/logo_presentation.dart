@@ -19,6 +19,7 @@ class LogoPresentation extends StatelessWidget {
     required this.vAlign,
     required this.doubleTapBehaviour,
     required this.constrained,
+    required this.useStandardViewer,
   });
 
   final TransformationController transformationController;
@@ -36,28 +37,44 @@ class LogoPresentation extends StatelessWidget {
   final VerticalNonCoveringZoomAlign vAlign;
   final DoubleTapZoomOutBehaviour doubleTapBehaviour;
   final bool constrained;
+  final bool useStandardViewer;
 
   @override
   Widget build(BuildContext context) {
-    return InteractiveViewer2(
+    final child = const FlutterLogo(size: 300);
+
+    if (useStandardViewer) {
+      return InteractiveViewer(
         transformationController: transformationController,
-        allowNonCoveringScreenZoom: allowNonCovering,
-        panAxis: panAxis,
         panEnabled: panEnabled,
         scaleEnabled: scaleEnabled,
-        showScrollbars: showScrollbars,
-        noMouseDragScroll: noMouseDragScroll,
-        scaleFactor: scaleFactor,
         minScale: minScale,
         maxScale: maxScale,
-        doubleTapToZoom: doubleTapToZoom,
-        nonCoveringZoomAlignmentHorizontal: hAlign,
-        nonCoveringZoomAlignmentVertical: vAlign,
-        doubleTapZoomOutBehaviour: doubleTapBehaviour,
+        panAxis: panAxis,
         clipBehavior: Clip.hardEdge,
         constrained: constrained,
-        child: FlutterLogo(size: 300),
+        child: child,
+      );
+    }
+
+    return InteractiveViewer2(
+      transformationController: transformationController,
+      allowNonCoveringScreenZoom: allowNonCovering,
+      panAxis: panAxis,
+      panEnabled: panEnabled,
+      scaleEnabled: scaleEnabled,
+      showScrollbars: showScrollbars,
+      noMouseDragScroll: noMouseDragScroll,
+      scaleFactor: scaleFactor,
+      minScale: minScale,
+      maxScale: maxScale,
+      doubleTapToZoom: doubleTapToZoom,
+      nonCoveringZoomAlignmentHorizontal: hAlign,
+      nonCoveringZoomAlignmentVertical: vAlign,
+      doubleTapZoomOutBehaviour: doubleTapBehaviour,
+      clipBehavior: Clip.hardEdge,
+      constrained: constrained,
+      child: child,
     );
   }
 }
-

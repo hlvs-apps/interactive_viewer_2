@@ -28,6 +28,8 @@ class MyApp extends StatelessWidget {
 
 enum PresentationMode { grid, logo, image }
 
+enum ViewerImplementation { interactiveViewer2, interactiveViewer }
+
 class ViewerDemoPage extends StatefulWidget {
   const ViewerDemoPage({super.key});
 
@@ -58,6 +60,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
       DoubleTapZoomOutBehaviour.zoomOutToMinScale;
 
   PresentationMode _mode = PresentationMode.grid; // default
+  ViewerImplementation _viewer = ViewerImplementation.interactiveViewer2;
 
   @override
   void dispose() {
@@ -81,6 +84,9 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
         final size = MediaQuery.of(ctx).size;
         final dialogWidth = (size.width * 0.9).clamp(600.0, 1200.0);
         final dialogHeight = (size.height * 0.85).clamp(400.0, 900.0);
+        final viewerTitle = _viewer == ViewerImplementation.interactiveViewer2
+            ? 'InteractiveViewer2'
+            : 'InteractiveViewer';
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(
@@ -111,10 +117,10 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                       children: [
                         const Icon(Icons.code),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'InteractiveViewer2 code (based on current settings)',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            '$viewerTitle code (based on current settings)',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         TextButton.icon(
@@ -225,35 +231,49 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
     final buf = StringBuffer();
     buf.writeln('// Paste inside a build() method or a widget tree');
     buf.writeln("// Requires: import 'package:flutter/material.dart';");
-    buf.writeln(
-      "//          import 'package:interactive_viewer_2/interactive_viewer_2.dart';",
-    );
-    buf.writeln('');
-    buf.writeln('InteractiveViewer2(');
-    buf.writeln('  allowNonCoveringScreenZoom: $_allowNonCovering,');
-    buf.writeln('  panAxis: PanAxis.${enumLiteral(_panAxis)},');
-    buf.writeln('  panEnabled: $_panEnabled,');
-    buf.writeln('  scaleEnabled: $_scaleEnabled,');
-    buf.writeln('  showScrollbars: $_showScrollbars,');
-    buf.writeln('  noMouseDragScroll: $_noMouseDragScroll,');
-    buf.writeln('  scaleFactor: ${_scaleFactor.toStringAsFixed(1)},');
 
-    buf.writeln('  minScale: ${_minScale.toStringAsFixed(2)},');
-    buf.writeln('  maxScale: ${_maxScale.toStringAsFixed(2)},');
-    buf.writeln('  doubleTapToZoom: $_doubleTapToZoom,');
-    buf.writeln(
-      '  nonCoveringZoomAlignmentHorizontal: HorizontalNonCoveringZoomAlign.${enumLiteral(_hAlign)},',
-    );
-    buf.writeln(
-      '  nonCoveringZoomAlignmentVertical: VerticalNonCoveringZoomAlign.${enumLiteral(_vAlign)},',
-    );
-    buf.writeln(
-      '  doubleTapZoomOutBehaviour: DoubleTapZoomOutBehaviour.${enumLiteral(_doubleTapBehaviour)},',
-    );
-    buf.writeln('  clipBehavior: Clip.hardEdge,');
-    buf.writeln('  constrained: $_constrained,');
-    buf.writeln('  child: $viewerChildSnippet,');
-    buf.writeln(');');
+    if (_viewer == ViewerImplementation.interactiveViewer2) {
+      buf.writeln(
+        "//          import 'package:interactive_viewer_2/interactive_viewer_2.dart';",
+      );
+      buf.writeln('');
+      buf.writeln('InteractiveViewer2(');
+      buf.writeln('  allowNonCoveringScreenZoom: $_allowNonCovering,');
+      buf.writeln('  panAxis: PanAxis.${enumLiteral(_panAxis)},');
+      buf.writeln('  panEnabled: $_panEnabled,');
+      buf.writeln('  scaleEnabled: $_scaleEnabled,');
+      buf.writeln('  showScrollbars: $_showScrollbars,');
+      buf.writeln('  noMouseDragScroll: $_noMouseDragScroll,');
+      buf.writeln('  scaleFactor: ${_scaleFactor.toStringAsFixed(1)},');
+      buf.writeln('  minScale: ${_minScale.toStringAsFixed(2)},');
+      buf.writeln('  maxScale: ${_maxScale.toStringAsFixed(2)},');
+      buf.writeln('  doubleTapToZoom: $_doubleTapToZoom,');
+      buf.writeln(
+        '  nonCoveringZoomAlignmentHorizontal: HorizontalNonCoveringZoomAlign.${enumLiteral(_hAlign)},',
+      );
+      buf.writeln(
+        '  nonCoveringZoomAlignmentVertical: VerticalNonCoveringZoomAlign.${enumLiteral(_vAlign)},',
+      );
+      buf.writeln(
+        '  doubleTapZoomOutBehaviour: DoubleTapZoomOutBehaviour.${enumLiteral(_doubleTapBehaviour)},',
+      );
+      buf.writeln('  clipBehavior: Clip.hardEdge,');
+      buf.writeln('  constrained: $_constrained,');
+      buf.writeln('  child: $viewerChildSnippet,');
+      buf.writeln(');');
+    } else {
+      buf.writeln('');
+      buf.writeln('InteractiveViewer(');
+      buf.writeln('  panEnabled: $_panEnabled,');
+      buf.writeln('  panAxis: PanAxis.${enumLiteral(_panAxis)},');
+      buf.writeln('  scaleEnabled: $_scaleEnabled,');
+      buf.writeln('  minScale: ${_minScale.toStringAsFixed(2)},');
+      buf.writeln('  maxScale: ${_maxScale.toStringAsFixed(2)},');
+      buf.writeln('  clipBehavior: Clip.hardEdge,');
+      buf.writeln('  constrained: $_constrained,');
+      buf.writeln('  child: $viewerChildSnippet,');
+      buf.writeln(');');
+    }
 
     if (mode == PresentationMode.grid) {
       buf.writeln('');
@@ -338,6 +358,32 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                             onPressed: _showCodeDialog,
                             icon: const Icon(Icons.code),
                             label: const Text('Show code'),
+                          ),
+                        ],
+                      ),
+
+                      const Divider(height: 24),
+                      Text(
+                        'Viewer',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButton<ViewerImplementation>(
+                        value: _viewer,
+                        isExpanded: true,
+                        onChanged: (v) {
+                          _tc.value = Matrix4.identity();
+                          setState(() => _viewer =
+                              v ?? ViewerImplementation.interactiveViewer2);
+                        },
+                        items: const [
+                          DropdownMenuItem(
+                            value: ViewerImplementation.interactiveViewer2,
+                            child: Text('InteractiveViewer2 (package)'),
+                          ),
+                          DropdownMenuItem(
+                            value: ViewerImplementation.interactiveViewer,
+                            child: Text('InteractiveViewer (Flutter)'),
                           ),
                         ],
                       ),
@@ -605,6 +651,8 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                   child: Center(
                     child: Builder(
                       builder: (_) {
+                        final useStandard =
+                            _viewer == ViewerImplementation.interactiveViewer;
                         switch (_mode) {
                           case PresentationMode.grid:
                             return grid_demo.GridPresentation(
@@ -624,6 +672,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                               vAlign: _vAlign,
                               doubleTapBehaviour: _doubleTapBehaviour,
                               constrained: _constrained,
+                              useStandardViewer: useStandard,
                             );
                           case PresentationMode.logo:
                             return logo_demo.LogoPresentation(
@@ -642,6 +691,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                               vAlign: _vAlign,
                               doubleTapBehaviour: _doubleTapBehaviour,
                               constrained: _constrained,
+                              useStandardViewer: useStandard,
                             );
                           case PresentationMode.image:
                             return image_demo.ImagePresentation(
@@ -660,6 +710,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                               vAlign: _vAlign,
                               doubleTapBehaviour: _doubleTapBehaviour,
                               constrained: _constrained,
+                              useStandardViewer: useStandard,
                             );
                         }
                       },

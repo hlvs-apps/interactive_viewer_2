@@ -19,6 +19,7 @@ class ImagePresentation extends StatelessWidget {
     required this.vAlign,
     required this.doubleTapBehaviour,
     required this.constrained,
+    required this.useStandardViewer,
   });
 
   final TransformationController transformationController;
@@ -36,9 +37,33 @@ class ImagePresentation extends StatelessWidget {
   final VerticalNonCoveringZoomAlign vAlign;
   final DoubleTapZoomOutBehaviour doubleTapBehaviour;
   final bool constrained;
+  final bool useStandardViewer;
 
   @override
   Widget build(BuildContext context) {
+    final child = Image.asset(
+      "assets/owl-2.jpg",
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (context, error, stackTrace) => const Text(
+        'Failed to load image',
+        style: TextStyle(color: Colors.redAccent),
+      ),
+    );
+
+    if (useStandardViewer) {
+      return InteractiveViewer(
+        transformationController: transformationController,
+        panEnabled: panEnabled,
+        scaleEnabled: scaleEnabled,
+        minScale: minScale,
+        maxScale: maxScale,
+        panAxis: panAxis,
+        clipBehavior: Clip.hardEdge,
+        constrained: constrained,
+        child: child,
+      );
+    }
+
     return InteractiveViewer2(
       transformationController: transformationController,
       allowNonCoveringScreenZoom: allowNonCovering,
@@ -56,15 +81,7 @@ class ImagePresentation extends StatelessWidget {
       doubleTapZoomOutBehaviour: doubleTapBehaviour,
       clipBehavior: Clip.hardEdge,
       constrained: constrained,
-      child: Image.asset(
-          "assets/owl-2.jpg",
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (context, error, stackTrace) => const Text(
-            'Failed to load image',
-            style: TextStyle(color: Colors.redAccent),
-          ),
-      ),
+      child: child,
     );
   }
 }
-
