@@ -17,6 +17,9 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
   /// How to clip the content.
   final Clip clipBehavior;
 
+  /// Whether the normal size constraints at this point in the widget tree are applied to the child.
+  final bool constrained;
+
   BetterInteractiveViewer({
     super.key,
     super.allowNonCoveringScreenZoom,
@@ -37,6 +40,7 @@ abstract class BetterInteractiveViewer extends BetterInteractiveViewerBase {
     this.doubleTapZoomOutBehaviour =
         DoubleTapZoomOutBehaviour.zoomOutToMinScale,
     this.clipBehavior = Clip.none,
+    this.constrained = false,
   });
 
   @override
@@ -102,6 +106,7 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
             transform: transformForRender,
             onResize: () => Future.microtask(afterResize),
             overrideSize: overrideSize,
+            constrained: widget.constrained,
             child: child,
           ),
         );

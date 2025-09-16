@@ -16,6 +16,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     BaseTransformScrollbarController? scrollbarController,
     Function()? onResize,
     Size? overrideSize,
+    bool constrained = false,
   }) : super(child) {
     this.transform = transform;
     this.alignment = alignment;
@@ -24,6 +25,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     this.onResize = onResize;
     this.scrollbarController = scrollbarController;
     this.overrideSize = overrideSize;
+    this.constrained = constrained;
   }
 
   /// The origin of the coordinate system (relative to the upper left corner of
@@ -45,11 +47,23 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
 
   Size? get overrideSize => _overrideSize;
   Size? _overrideSize;
+
   set overrideSize(Size? value) {
     if (_overrideSize == value) {
       return;
     }
     _overrideSize = value;
+    markNeedsLayout();
+  }
+
+  bool get constrained => _constrained;
+  bool _constrained = false;
+
+  set constrained(bool value) {
+    if (_constrained == value) {
+      return;
+    }
+    _constrained = value;
     markNeedsLayout();
   }
 
@@ -140,6 +154,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
 
   Function()? get onResize => _onResize;
   Function()? _onResize;
+
   set onResize(Function()? value) {
     if (_onResize == value) {
       return;
@@ -151,7 +166,8 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
   @override
   void performLayout() {
     Size s = this.constraints.biggest;
-    BoxConstraints constraints = const BoxConstraints();
+    BoxConstraints constraints =
+        constrained ? this.constraints : const BoxConstraints();
     if (_overrideSize != null) {
       constraints = BoxConstraints.tight(_overrideSize!);
     }
