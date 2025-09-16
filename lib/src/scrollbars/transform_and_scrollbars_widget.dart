@@ -15,6 +15,7 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
     this.transformHitTests = true,
     this.onResize,
     this.overrideSize,
+    this.constrained = false,
     super.child,
   });
 
@@ -53,6 +54,9 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
   /// Override the size of the child. The child will be forced to have this size.
   final Size? overrideSize;
 
+  /// Whether the child should be constrained to the size of this widget.
+  final bool constrained;
+
   @override
   RenderTransformAndScrollbarsWidget createRenderObject(BuildContext context) {
     return RenderTransformAndScrollbarsWidget(
@@ -64,6 +68,7 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
       scrollbarController: scrollbarController,
       onResize: onResize,
       overrideSize: overrideSize,
+      constrained: constrained,
     );
   }
 
