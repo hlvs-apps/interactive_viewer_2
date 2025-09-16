@@ -3,6 +3,8 @@ import 'package:interactive_viewer_2/interactive_viewer_2.dart';
 import 'presentations/grid_presentation.dart' as grid_demo;
 import 'presentations/logo_presentation.dart' as logo_demo;
 import 'presentations/image_presentation.dart' as image_demo;
+import 'package:flutter/services.dart';
+import 'package:syntax_highlight/syntax_highlight.dart' as sh;
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +18,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'InteractiveViewer2 Showcase',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue)),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
       home: const ViewerDemoPage(),
     );
   }
@@ -47,9 +51,11 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
   double _scaleFactor = 200.0;
 
   PanAxis _panAxis = PanAxis.free;
-  HorizontalNonCoveringZoomAlign _hAlign = HorizontalNonCoveringZoomAlign.middle;
+  HorizontalNonCoveringZoomAlign _hAlign =
+      HorizontalNonCoveringZoomAlign.middle;
   VerticalNonCoveringZoomAlign _vAlign = VerticalNonCoveringZoomAlign.middle;
-  DoubleTapZoomOutBehaviour _doubleTapBehaviour = DoubleTapZoomOutBehaviour.zoomOutToMinScale;
+  DoubleTapZoomOutBehaviour _doubleTapBehaviour =
+      DoubleTapZoomOutBehaviour.zoomOutToMinScale;
 
   PresentationMode _mode = PresentationMode.grid; // default
 
@@ -65,6 +71,208 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
     });
   }
 
+  void _showCodeDialog() {
+    final code = _buildViewerCodeSnippet(_mode);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        final size = MediaQuery.of(ctx).size;
+        final dialogWidth = (size.width * 0.9).clamp(600.0, 1200.0);
+        final dialogHeight = (size.height * 0.85).clamp(400.0, 900.0);
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          child: Material(
+            color: DialogTheme.of(ctx).backgroundColor,
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.code),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'InteractiveViewer2 code (based on current settings)',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () async {
+                            await Clipboard.setData(ClipboardData(text: code));
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Code copied to clipboard'),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.copy),
+                          label: const Text('Copy'),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: FutureBuilder<List<sh.HighlighterTheme>>(
+                      future: () async {
+                        await sh.Highlighter.initialize(['dart']);
+                        final lightTheme = sh.HighlighterTheme.loadLightTheme();
+                        final darkTheme = sh.HighlighterTheme.loadDarkTheme();
+                        return Future.wait([lightTheme, darkTheme]);
+                      }(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+                        final baseStyle = TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13.5,
+                          height: 1.5,
+                          color: isDark ? Colors.white : Colors.black,
+                        );
+
+                        final highlighter = sh.Highlighter(
+                          language: 'dart',
+                          theme: isDark ? snapshot.data![1] : snapshot.data![0],
+                        );
+                        final TextSpan highlighted = highlighter.highlight(
+                          code,
+                        );
+
+                        return Scrollbar(
+                          thumbVisibility: true,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(16),
+                            child: DefaultTextStyle(
+                              style: baseStyle,
+                              child: SelectableText.rich(
+                                highlighted,
+                                textScaler: const TextScaler.linear(1.0),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextButton(
+                        onPressed: () => Navigator.of(ctx).maybePop(),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _buildViewerCodeSnippet(PresentationMode mode) {
+    String enumLiteral(Object e) =>
+        e.toString().split('.').last; // PanAxis.free -> free
+
+    String viewerChildSnippet;
+    switch (mode) {
+      case PresentationMode.grid:
+        viewerChildSnippet =
+            'SizedBox(\n      width: 3000,\n      height: 2000,\n      child: CustomPaint(\n        painter: GridPainter(), // your painter\n      ),\n  )';
+        break;
+      case PresentationMode.logo:
+        viewerChildSnippet = 'const FlutterLogo(size: 300)';
+        break;
+      case PresentationMode.image:
+        viewerChildSnippet = "Image.asset('assets/owl-2.jpg')";
+        break;
+    }
+
+    final buf = StringBuffer();
+    buf.writeln('// Paste inside a build() method or a widget tree');
+    buf.writeln("// Requires: import 'package:flutter/material.dart';");
+    buf.writeln(
+      "//          import 'package:interactive_viewer_2/interactive_viewer_2.dart';",
+    );
+    buf.writeln('');
+    buf.writeln('InteractiveViewer2(');
+    buf.writeln('  allowNonCoveringScreenZoom: $_allowNonCovering,');
+    buf.writeln('  panAxis: PanAxis.${enumLiteral(_panAxis)},');
+    buf.writeln('  panEnabled: $_panEnabled,');
+    buf.writeln('  scaleEnabled: $_scaleEnabled,');
+    buf.writeln('  showScrollbars: $_showScrollbars,');
+    buf.writeln('  noMouseDragScroll: $_noMouseDragScroll,');
+    buf.writeln('  scaleFactor: ${_scaleFactor.toStringAsFixed(1)},');
+
+    buf.writeln('  minScale: ${_minScale.toStringAsFixed(2)},');
+    buf.writeln('  maxScale: ${_maxScale.toStringAsFixed(2)},');
+    buf.writeln('  doubleTapToZoom: $_doubleTapToZoom,');
+    buf.writeln(
+      '  nonCoveringZoomAlignmentHorizontal: HorizontalNonCoveringZoomAlign.${enumLiteral(_hAlign)},',
+    );
+    buf.writeln(
+      '  nonCoveringZoomAlignmentVertical: VerticalNonCoveringZoomAlign.${enumLiteral(_vAlign)},',
+    );
+    buf.writeln(
+      '  doubleTapZoomOutBehaviour: DoubleTapZoomOutBehaviour.${enumLiteral(_doubleTapBehaviour)},',
+    );
+    buf.writeln('  clipBehavior: Clip.hardEdge,');
+    buf.writeln('  constrained: $_constrained,');
+    buf.writeln('  child: $viewerChildSnippet,');
+    buf.writeln(');');
+
+    if (mode == PresentationMode.grid) {
+      buf.writeln('');
+      buf.writeln('// Example painter (optional):');
+      buf.writeln('class GridPainter extends CustomPainter {');
+      buf.writeln('  @override');
+      buf.writeln('  void paint(Canvas canvas, Size size) {');
+      buf.writeln('    // draw your grid/content here');
+      buf.writeln('  }');
+      buf.writeln('  @override');
+      buf.writeln(
+        '  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;',
+      );
+      buf.writeln('}');
+    }
+
+    return buf.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,11 +284,19 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
             onPressed: _reset,
             icon: const Icon(Icons.restore),
           ),
+          IconButton(
+            tooltip: 'Show code',
+            onPressed: _showCodeDialog,
+            icon: const Icon(Icons.code),
+          ),
         ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final Size viewport = Size(constraints.maxWidth - 320, constraints.maxHeight);
+          final Size viewport = Size(
+            constraints.maxWidth - 320,
+            constraints.maxHeight,
+          );
           final m = _tc.value.storage;
           final double approxScale = m[0];
 
@@ -93,13 +309,21 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Status', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Status',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       Text('Scale: ${approxScale.toStringAsFixed(2)}'),
-                      Text('Viewport: ${viewport.width.toStringAsFixed(0)} x ${viewport.height.toStringAsFixed(0)}'),
+                      Text(
+                        'Viewport: ${viewport.width.toStringAsFixed(0)} x ${viewport.height.toStringAsFixed(0)}',
+                      ),
                       const Divider(height: 24),
 
-                      Text('Actions', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Actions',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -110,25 +334,48 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                             icon: const Icon(Icons.restore),
                             label: const Text('Reset'),
                           ),
+                          ElevatedButton.icon(
+                            onPressed: _showCodeDialog,
+                            icon: const Icon(Icons.code),
+                            label: const Text('Show code'),
+                          ),
                         ],
                       ),
 
                       const Divider(height: 24),
-                      Text('Presentation', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Presentation',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       DropdownButton<PresentationMode>(
                         value: _mode,
                         isExpanded: true,
-                        onChanged: (v) => setState(() => _mode = v ?? PresentationMode.grid),
+                        onChanged: (v) {
+                          _tc.value = Matrix4.identity();
+                          setState(() => _mode = v ?? PresentationMode.grid);
+                        },
                         items: const [
-                          DropdownMenuItem(value: PresentationMode.grid, child: Text('Grid')),
-                          DropdownMenuItem(value: PresentationMode.logo, child: Text('Logo')),
-                          DropdownMenuItem(value: PresentationMode.image, child: Text('Image')),
+                          DropdownMenuItem(
+                            value: PresentationMode.grid,
+                            child: Text('Grid'),
+                          ),
+                          DropdownMenuItem(
+                            value: PresentationMode.logo,
+                            child: Text('Logo'),
+                          ),
+                          DropdownMenuItem(
+                            value: PresentationMode.image,
+                            child: Text('Image'),
+                          ),
                         ],
                       ),
 
                       const Divider(height: 24),
-                      Text('Options', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Options',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       _boolTile(
                         title: 'Show scrollbars',
@@ -159,7 +406,8 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                         title: 'Disable mouse drag scroll',
                         subtitle: 'When off, you can drag with the mouse',
                         value: _noMouseDragScroll,
-                        onChanged: (v) => setState(() => _noMouseDragScroll = v),
+                        onChanged: (v) =>
+                            setState(() => _noMouseDragScroll = v),
                       ),
                       _boolTile(
                         title: 'Constrained',
@@ -173,12 +421,25 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                       DropdownButton<PanAxis>(
                         value: _panAxis,
                         isExpanded: true,
-                        onChanged: (v) => setState(() => _panAxis = v ?? PanAxis.free),
+                        onChanged: (v) =>
+                            setState(() => _panAxis = v ?? PanAxis.free),
                         items: const [
-                          DropdownMenuItem(value: PanAxis.free, child: Text('free')),
-                          DropdownMenuItem(value: PanAxis.horizontal, child: Text('horizontal')),
-                          DropdownMenuItem(value: PanAxis.vertical, child: Text('vertical')),
-                          DropdownMenuItem(value: PanAxis.aligned, child: Text('aligned')),
+                          DropdownMenuItem(
+                            value: PanAxis.free,
+                            child: Text('free'),
+                          ),
+                          DropdownMenuItem(
+                            value: PanAxis.horizontal,
+                            child: Text('horizontal'),
+                          ),
+                          DropdownMenuItem(
+                            value: PanAxis.vertical,
+                            child: Text('vertical'),
+                          ),
+                          DropdownMenuItem(
+                            value: PanAxis.aligned,
+                            child: Text('aligned'),
+                          ),
                         ],
                       ),
 
@@ -187,18 +448,23 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                       DropdownButton<DoubleTapZoomOutBehaviour>(
                         value: _doubleTapBehaviour,
                         isExpanded: true,
-                        onChanged: (v) => setState(() => _doubleTapBehaviour = v ?? DoubleTapZoomOutBehaviour.zoomOutToMinScale),
+                        onChanged: (v) => setState(
+                          () => _doubleTapBehaviour =
+                              v ?? DoubleTapZoomOutBehaviour.zoomOutToMinScale,
+                        ),
                         items: const [
                           DropdownMenuItem(
                             value: DoubleTapZoomOutBehaviour.zoomOutToMinScale,
                             child: Text('to min scale (fit all)'),
                           ),
                           DropdownMenuItem(
-                            value: DoubleTapZoomOutBehaviour.zoomOutToMatchWidth,
+                            value:
+                                DoubleTapZoomOutBehaviour.zoomOutToMatchWidth,
                             child: Text('fit width'),
                           ),
                           DropdownMenuItem(
-                            value: DoubleTapZoomOutBehaviour.zoomOutToMatchHeight,
+                            value:
+                                DoubleTapZoomOutBehaviour.zoomOutToMatchHeight,
                             child: Text('fit height'),
                           ),
                         ],
@@ -216,11 +482,27 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                                 DropdownButton<HorizontalNonCoveringZoomAlign>(
                                   value: _hAlign,
                                   isExpanded: true,
-                                  onChanged: (v) => setState(() => _hAlign = v ?? HorizontalNonCoveringZoomAlign.middle),
+                                  onChanged: (v) => setState(
+                                    () => _hAlign =
+                                        v ??
+                                        HorizontalNonCoveringZoomAlign.middle,
+                                  ),
                                   items: const [
-                                    DropdownMenuItem(value: HorizontalNonCoveringZoomAlign.left, child: Text('left')),
-                                    DropdownMenuItem(value: HorizontalNonCoveringZoomAlign.middle, child: Text('center')),
-                                    DropdownMenuItem(value: HorizontalNonCoveringZoomAlign.right, child: Text('right')),
+                                    DropdownMenuItem(
+                                      value:
+                                          HorizontalNonCoveringZoomAlign.left,
+                                      child: Text('left'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value:
+                                          HorizontalNonCoveringZoomAlign.middle,
+                                      child: Text('center'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value:
+                                          HorizontalNonCoveringZoomAlign.right,
+                                      child: Text('right'),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -235,11 +517,26 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                                 DropdownButton<VerticalNonCoveringZoomAlign>(
                                   value: _vAlign,
                                   isExpanded: true,
-                                  onChanged: (v) => setState(() => _vAlign = v ?? VerticalNonCoveringZoomAlign.middle),
+                                  onChanged: (v) => setState(
+                                    () => _vAlign =
+                                        v ??
+                                        VerticalNonCoveringZoomAlign.middle,
+                                  ),
                                   items: const [
-                                    DropdownMenuItem(value: VerticalNonCoveringZoomAlign.top, child: Text('top')),
-                                    DropdownMenuItem(value: VerticalNonCoveringZoomAlign.middle, child: Text('center')),
-                                    DropdownMenuItem(value: VerticalNonCoveringZoomAlign.bottom, child: Text('bottom')),
+                                    DropdownMenuItem(
+                                      value: VerticalNonCoveringZoomAlign.top,
+                                      child: Text('top'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value:
+                                          VerticalNonCoveringZoomAlign.middle,
+                                      child: Text('center'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value:
+                                          VerticalNonCoveringZoomAlign.bottom,
+                                      child: Text('bottom'),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -260,7 +557,9 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                                 final d = double.tryParse(v) ?? _minScale;
                                 setState(() {
                                   _minScale = d.clamp(0.05, 10.0);
-                                  if (_maxScale < _minScale) _maxScale = _minScale;
+                                  if (_maxScale < _minScale) {
+                                    _maxScale = _minScale;
+                                  }
                                 });
                               },
                             ),
@@ -274,7 +573,9 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                                 final d = double.tryParse(v) ?? _maxScale;
                                 setState(() {
                                   _maxScale = d.clamp(0.1, 20.0);
-                                  if (_minScale > _maxScale) _minScale = _maxScale;
+                                  if (_minScale > _maxScale) {
+                                    _minScale = _maxScale;
+                                  }
                                 });
                               },
                             ),
@@ -283,7 +584,9 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                       ),
 
                       const SizedBox(height: 12),
-                      Text('Mouse/Trackpad scale factor (${_scaleFactor.toStringAsFixed(0)})'),
+                      Text(
+                        'Mouse/Trackpad scale factor (${_scaleFactor.toStringAsFixed(0)})',
+                      ),
                       Slider(
                         min: 50,
                         max: 600,
