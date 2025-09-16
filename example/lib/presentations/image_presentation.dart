@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:interactive_viewer_2/interactive_viewer_2.dart';
 
-class LogoPresentation extends StatelessWidget {
-  const LogoPresentation({
+class ImagePresentation extends StatelessWidget {
+  const ImagePresentation({
     super.key,
     required this.transformationController,
     required this.allowNonCovering,
@@ -40,23 +40,30 @@ class LogoPresentation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InteractiveViewer2(
-        transformationController: transformationController,
-        allowNonCoveringScreenZoom: allowNonCovering,
-        panAxis: panAxis,
-        panEnabled: panEnabled,
-        scaleEnabled: scaleEnabled,
-        showScrollbars: showScrollbars,
-        noMouseDragScroll: noMouseDragScroll,
-        scaleFactor: scaleFactor,
-        minScale: minScale,
-        maxScale: maxScale,
-        doubleTapToZoom: doubleTapToZoom,
-        nonCoveringZoomAlignmentHorizontal: hAlign,
-        nonCoveringZoomAlignmentVertical: vAlign,
-        doubleTapZoomOutBehaviour: doubleTapBehaviour,
-        clipBehavior: Clip.hardEdge,
-        constrained: constrained,
-        child: FlutterLogo(size: 300),
+      transformationController: transformationController,
+      allowNonCoveringScreenZoom: allowNonCovering,
+      panAxis: panAxis,
+      panEnabled: panEnabled,
+      scaleEnabled: scaleEnabled,
+      showScrollbars: showScrollbars,
+      noMouseDragScroll: noMouseDragScroll,
+      scaleFactor: scaleFactor,
+      minScale: minScale,
+      maxScale: maxScale,
+      doubleTapToZoom: doubleTapToZoom,
+      nonCoveringZoomAlignmentHorizontal: hAlign,
+      nonCoveringZoomAlignmentVertical: vAlign,
+      doubleTapZoomOutBehaviour: doubleTapBehaviour,
+      clipBehavior: Clip.hardEdge,
+      constrained: constrained,
+      child: Image.asset(
+          "assets/owl-2.jpg",
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => const Text(
+            'Failed to load image',
+            style: TextStyle(color: Colors.redAccent),
+          ),
+      ),
     );
   }
 }

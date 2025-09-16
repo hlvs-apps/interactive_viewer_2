@@ -19,6 +19,7 @@ class GridPresentation extends StatelessWidget {
     required this.hAlign,
     required this.vAlign,
     required this.doubleTapBehaviour,
+    required this.constrained,
   });
 
   final Size viewport;
@@ -36,6 +37,7 @@ class GridPresentation extends StatelessWidget {
   final HorizontalNonCoveringZoomAlign hAlign;
   final VerticalNonCoveringZoomAlign vAlign;
   final DoubleTapZoomOutBehaviour doubleTapBehaviour;
+  final bool constrained;
 
   static const Size _contentSize = Size(3000, 2000);
 
@@ -57,6 +59,7 @@ class GridPresentation extends StatelessWidget {
       nonCoveringZoomAlignmentVertical: vAlign,
       doubleTapZoomOutBehaviour: doubleTapBehaviour,
       clipBehavior: Clip.hardEdge,
+      constrained: constrained,
       child: SizedBox(
         width: _contentSize.width,
         height: _contentSize.height,

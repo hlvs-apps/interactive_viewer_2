@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:interactive_viewer_2/interactive_viewer_2.dart';
 import 'presentations/grid_presentation.dart' as grid_demo;
 import 'presentations/logo_presentation.dart' as logo_demo;
+import 'presentations/image_presentation.dart' as image_demo;
 
 void main() {
   runApp(const MyApp());
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-enum PresentationMode { grid, logo }
+enum PresentationMode { grid, logo, image }
 
 class ViewerDemoPage extends StatefulWidget {
   const ViewerDemoPage({super.key});
@@ -39,6 +40,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
   bool _scaleEnabled = true;
   bool _doubleTapToZoom = true;
   bool _noMouseDragScroll = true;
+  bool _constrained = false;
 
   double _minScale = 0.2;
   double _maxScale = 3.0;
@@ -121,6 +123,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                         items: const [
                           DropdownMenuItem(value: PresentationMode.grid, child: Text('Grid')),
                           DropdownMenuItem(value: PresentationMode.logo, child: Text('Logo')),
+                          DropdownMenuItem(value: PresentationMode.image, child: Text('Image')),
                         ],
                       ),
 
@@ -157,6 +160,12 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                         subtitle: 'When off, you can drag with the mouse',
                         value: _noMouseDragScroll,
                         onChanged: (v) => setState(() => _noMouseDragScroll = v),
+                      ),
+                      _boolTile(
+                        title: 'Constrained',
+                        subtitle: 'Apply parent constraints to child',
+                        value: _constrained,
+                        onChanged: (v) => setState(() => _constrained = v),
                       ),
 
                       const SizedBox(height: 12),
@@ -311,6 +320,7 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                               hAlign: _hAlign,
                               vAlign: _vAlign,
                               doubleTapBehaviour: _doubleTapBehaviour,
+                              constrained: _constrained,
                             );
                           case PresentationMode.logo:
                             return logo_demo.LogoPresentation(
@@ -328,6 +338,25 @@ class _ViewerDemoPageState extends State<ViewerDemoPage> {
                               hAlign: _hAlign,
                               vAlign: _vAlign,
                               doubleTapBehaviour: _doubleTapBehaviour,
+                              constrained: _constrained,
+                            );
+                          case PresentationMode.image:
+                            return image_demo.ImagePresentation(
+                              transformationController: _tc,
+                              allowNonCovering: _allowNonCovering,
+                              panAxis: _panAxis,
+                              panEnabled: _panEnabled,
+                              scaleEnabled: _scaleEnabled,
+                              showScrollbars: _showScrollbars,
+                              noMouseDragScroll: _noMouseDragScroll,
+                              scaleFactor: _scaleFactor,
+                              minScale: _minScale,
+                              maxScale: _maxScale,
+                              doubleTapToZoom: _doubleTapToZoom,
+                              hAlign: _hAlign,
+                              vAlign: _vAlign,
+                              doubleTapBehaviour: _doubleTapBehaviour,
+                              constrained: _constrained,
                             );
                         }
                       },
