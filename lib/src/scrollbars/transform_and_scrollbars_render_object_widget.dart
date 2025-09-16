@@ -285,4 +285,10 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     properties
         .add(DiagnosticsProperty<bool>('transformHitTests', transformHitTests));
   }
+
+  @override
+  void dispose() {
+    scrollbarController?.removeListener(_onScrollbarControllerScrollChanged);
+    super.dispose();
+  }
 }

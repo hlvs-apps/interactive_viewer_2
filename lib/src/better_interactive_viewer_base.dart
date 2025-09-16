@@ -349,7 +349,7 @@ abstract class BetterInteractiveViewerBaseState<
   void afterResize({bool forceUpdate = true}) {
     Matrix4 transform = transformationController!.value;
     Vector3 translation = transform.getTranslation();
-    Rect boundaryRect = childBoundaryRect;
+    Rect boundaryRect = childBoundaryRect!;
     Rect viewport = widgetViewport;
 
     double scale = transform.getScaleOnZAxis();
@@ -404,11 +404,15 @@ abstract class BetterInteractiveViewerBaseState<
       return transformationController!.value;
     }
     Matrix4 transform = transformationController!.value;
-    Rect boundaryRect = childBoundaryRect;
+    Rect? boundaryRect = childBoundaryRect;
     Rect viewport = widgetViewport;
     double scale = transform.getScaleOnZAxis();
-    inNonCoveringZoomHorizontal = boundaryRect.width * scale < viewport.width;
-    inNonCoveringZoomVertical = boundaryRect.height * scale < viewport.height;
+    inNonCoveringZoomHorizontal = boundaryRect != null
+        ? boundaryRect.width * scale < viewport.width
+        : false;
+    inNonCoveringZoomVertical = boundaryRect != null
+        ? boundaryRect.height * scale < viewport.height
+        : false;
     if (inNonCoveringZoomHorizontal || inNonCoveringZoomVertical) {
       transform = transform.clone(); //dont change the transformation controller
       transform.scale(1 / scale);
@@ -449,12 +453,12 @@ abstract class BetterInteractiveViewerBaseState<
   double get doubleTabZoomOutScale {
     switch (doubleTapZoomOutBehaviour) {
       case DoubleTapZoomOutBehaviour.zoomOutToMatchHeight:
-        return widgetViewport.height / childBoundaryRect.height;
+        return widgetViewport.height / childBoundaryRect!.height;
       case DoubleTapZoomOutBehaviour.zoomOutToMatchWidth:
-        return widgetViewport.width / childBoundaryRect.width;
+        return widgetViewport.width / childBoundaryRect!.width;
       case DoubleTapZoomOutBehaviour.zoomOutToMinScale:
-        double widthScale = widgetViewport.width / childBoundaryRect.width;
-        double heightScale = widgetViewport.height / childBoundaryRect.height;
+        double widthScale = widgetViewport.width / childBoundaryRect!.width;
+        double heightScale = widgetViewport.height / childBoundaryRect!.height;
         return math.min(widthScale, heightScale);
     }
   }
@@ -467,9 +471,10 @@ abstract class BetterInteractiveViewerBaseState<
       case VerticalNonCoveringZoomAlign.top:
         return 0;
       case VerticalNonCoveringZoomAlign.middle:
-        return (widgetViewport.height - (childBoundaryRect.height * scale)) / 2;
+        return (widgetViewport.height - (childBoundaryRect!.height * scale)) /
+            2;
       case VerticalNonCoveringZoomAlign.bottom:
-        return widgetViewport.height - (childBoundaryRect.height * scale);
+        return widgetViewport.height - (childBoundaryRect!.height * scale);
     }
   }
 
@@ -481,9 +486,9 @@ abstract class BetterInteractiveViewerBaseState<
       case HorizontalNonCoveringZoomAlign.left:
         return 0;
       case HorizontalNonCoveringZoomAlign.middle:
-        return (widgetViewport.width - (childBoundaryRect.width * scale)) / 2;
+        return (widgetViewport.width - (childBoundaryRect!.width * scale)) / 2;
       case HorizontalNonCoveringZoomAlign.right:
-        return widgetViewport.width - (childBoundaryRect.width * scale);
+        return widgetViewport.width - (childBoundaryRect!.width * scale);
     }
   }
 
@@ -496,23 +501,33 @@ abstract class BetterInteractiveViewerBaseState<
   // https://github.com/flutter/flutter/issues/57698
   final bool _rotateEnabled = false;
 
+  Rect? _cachedChildBoundaryRect;
+
   /// The _boundaryRect is calculated by adding the boundaryMargin to the size of
   /// the child.
   @protected
-  Rect get childBoundaryRect {
+  Rect? get childBoundaryRect {
     assert(childKey.currentContext != null);
 
     Size childSize;
+    Size? realChildSize = this.realChildSize;
     if (realChildSize != null) {
-      childSize = realChildSize!;
+      childSize = realChildSize;
     } else {
-      final RenderBox childRenderBox =
-          childKey.currentContext!.findRenderObject()! as RenderBox;
-      childSize = childRenderBox.size;
+      final context = childKey.currentContext;
+      if (context == null) {
+        return _cachedChildBoundaryRect;
+      }
+      //Why isn't there a better way to get the size of a widget that may be inactive?
+      final RenderObject? renderObject = (context as Element).renderObject;
+      if (renderObject is! RenderBox || !renderObject.hasSize || !renderObject.attached) {
+        return _cachedChildBoundaryRect;
+      }
+      childSize = renderObject.size;
     }
     Offset offset = Offset.zero;
-
-    return offset & childSize;
+    _cachedChildBoundaryRect=offset & childSize;
+    return _cachedChildBoundaryRect!;
   }
 
   // The Rect representing the child's parent.
@@ -560,7 +575,7 @@ abstract class BetterInteractiveViewerBaseState<
 
     // If the boundaries are infinite, then no need to check if the translation
     // fits within them.
-    if (childBoundaryRect.isInfinite) {
+    if (childBoundaryRect!.isInfinite) {
       return nextMatrix;
     }
 
@@ -569,7 +584,7 @@ abstract class BetterInteractiveViewerBaseState<
     // limits translation. With this approach, all points that are visible with
     // no rotation are visible after rotation.
     final Quad boundariesAabbQuad = getAxisAlignedBoundingBoxWithRotation(
-      childBoundaryRect,
+      childBoundaryRect!,
       currentRotation,
     );
 
@@ -651,10 +666,10 @@ abstract class BetterInteractiveViewerBaseState<
       math.max(
         widget.allowNonCoveringScreenZoom
             ? widget.minScale
-            : (widgetViewport.width / childBoundaryRect.width),
+            : (widgetViewport.width / childBoundaryRect!.width),
         widget.allowNonCoveringScreenZoom
             ? widget.minScale
-            : (widgetViewport.height / childBoundaryRect.height),
+            : (widgetViewport.height / childBoundaryRect!.height),
       ),
     );
     final double clampedTotalScale = clampDouble(
@@ -665,7 +680,7 @@ abstract class BetterInteractiveViewerBaseState<
     Vector3 translation = matrix.getTranslation();
     // If smaller than the viewport, set translation to 0
     if (clampedTotalScale <
-        (widgetViewport.height / childBoundaryRect.height)) {
+        (widgetViewport.height / childBoundaryRect!.height)) {
       translation.y = 0;
     }
     final double clampedScale = clampedTotalScale / currentScale;
@@ -1320,7 +1335,7 @@ abstract class BetterInteractiveViewerBaseState<
       controlInterface: CustomTransformScrollbarWidgetInterface(
         fgetTransform: () => transformationController!.value,
         fgetViewport: () => widgetViewport.size,
-        fgetContent: () => childBoundaryRect.size,
+        fgetContent: () => childBoundaryRect!.size,
         fcontext: () => context,
         fjumpVertical: (v) {
           transformationController!.value = matrixTranslate(
