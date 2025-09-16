@@ -346,7 +346,9 @@ abstract class BetterInteractiveViewerBaseState<
 
   /// Cal this method after resize
   @protected
-  void afterResize({bool forceUpdate = true}) {
+  void afterResize({Size? size, bool forceUpdate = true}) {
+    //if (size!=null)
+    _cachedChildSize = size;
     Matrix4 transform = transformationController!.value;
     Vector3 translation = transform.getTranslation();
     Rect boundaryRect = childBoundaryRect!;
@@ -501,7 +503,10 @@ abstract class BetterInteractiveViewerBaseState<
   // https://github.com/flutter/flutter/issues/57698
   final bool _rotateEnabled = false;
 
-  Rect? _cachedChildBoundaryRect;
+  Size? _cachedChildSize;
+
+  Rect? get _cachedChildBoundaryRect =>
+      _cachedChildSize == null ? null : Offset.zero & _cachedChildSize!;
 
   /// The _boundaryRect is calculated by adding the boundaryMargin to the size of
   /// the child.
@@ -513,6 +518,8 @@ abstract class BetterInteractiveViewerBaseState<
     Size? realChildSize = this.realChildSize;
     if (realChildSize != null) {
       childSize = realChildSize;
+    } else if (_cachedChildSize != null) {
+      return _cachedChildBoundaryRect;
     } else {
       final context = childKey.currentContext;
       if (context == null) {
@@ -520,14 +527,15 @@ abstract class BetterInteractiveViewerBaseState<
       }
       //Why isn't there a better way to get the size of a widget that may be inactive?
       final RenderObject? renderObject = (context as Element).renderObject;
-      if (renderObject is! RenderBox || !renderObject.hasSize || !renderObject.attached) {
+      if (renderObject is! RenderBox ||
+          !renderObject.hasSize ||
+          !renderObject.attached) {
         return _cachedChildBoundaryRect;
       }
-      childSize = renderObject.size;
+      _cachedChildSize = renderObject.size;
+      return _cachedChildBoundaryRect;
     }
-    Offset offset = Offset.zero;
-    _cachedChildBoundaryRect=offset & childSize;
-    return _cachedChildBoundaryRect!;
+    return Offset.zero & childSize;
   }
 
   // The Rect representing the child's parent.

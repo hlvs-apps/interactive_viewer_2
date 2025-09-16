@@ -14,7 +14,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     this.transformHitTests = true,
     RenderBox? child,
     BaseTransformScrollbarController? scrollbarController,
-    Function()? onResize,
+    Function({Size? size})? onResize,
     Size? overrideSize,
     bool constrained = false,
   }) : super(child) {
@@ -152,10 +152,10 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     markNeedsPaint();
   }
 
-  Function()? get onResize => _onResize;
-  Function()? _onResize;
+  Function({Size? size})? get onResize => _onResize;
+  Function({Size? size})? _onResize;
 
-  set onResize(Function()? value) {
+  set onResize(Function({Size? size})? value) {
     if (_onResize == value) {
       return;
     }
@@ -163,6 +163,7 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
   }
 
   Size? _lastSize;
+  Size? _lastChildSize;
   @override
   void performLayout() {
     Size s = this.constraints.biggest;
@@ -171,11 +172,15 @@ class RenderTransformAndScrollbarsWidget extends RenderProxyBox {
     if (_overrideSize != null) {
       constraints = BoxConstraints.tight(_overrideSize!);
     }
-    child?.layout(constraints);
+    child?.layout(constraints,parentUsesSize: true);
     size = s;
-    if (_lastSize != s) {
+    Size? childSize = child?.size;
+    if (_lastSize != s || _lastChildSize != childSize) {
       _lastSize = s;
-      onResize?.call();
+      _lastChildSize = childSize;
+      if (onResize != null) {
+        onResize!(size: childSize);
+      }
     }
   }
 

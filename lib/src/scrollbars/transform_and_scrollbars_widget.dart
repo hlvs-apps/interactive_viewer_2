@@ -49,7 +49,7 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
   /// Whether to apply the transformation when performing hit tests.
   final bool transformHitTests;
 
-  final Function()? onResize;
+  final Function({Size? size})? onResize;
 
   /// Override the size of the child. The child will be forced to have this size.
   final Size? overrideSize;
@@ -83,6 +83,7 @@ class TransformAndScrollbarsWidget extends SingleChildRenderObjectWidget {
       ..transformHitTests = transformHitTests
       ..scrollbarController = scrollbarController
       ..onResize = onResize
-      ..overrideSize = overrideSize;
+      ..overrideSize = overrideSize
+      ..constrained = constrained;
   }
 }

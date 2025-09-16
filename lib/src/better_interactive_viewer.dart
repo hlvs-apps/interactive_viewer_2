@@ -70,6 +70,16 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(T oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.constrained != widget.constrained) {
+      //WidgetsBinding.instance.addPostFrameCallback((_) {
+      //afterResize();
+      //});
+    }
+  }
+
   /// If not null, overrides the size of the child.
   Size? get overrideSize;
 
@@ -104,7 +114,7 @@ abstract class BetterInteractiveViewerState<T extends BetterInteractiveViewer>
           TransformAndScrollbarsWidget(
             scrollbarController: scrollbarController,
             transform: transformForRender,
-            onResize: () => Future.microtask(afterResize),
+            onResize: ({Size? size}) => Future.microtask(() => afterResize(size: size)),
             overrideSize: overrideSize,
             constrained: widget.constrained,
             child: child,
