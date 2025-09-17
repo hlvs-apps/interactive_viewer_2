@@ -49,7 +49,7 @@
 
 * Upgraded deprecated Code
 
-## 0.0.11
+## 0.1.0
 
 * Added constrained property, disabled by default (changes behavior of InteractiveViewer2) (In InteractiveViewer it is enabled by default)
 * Various bugfixes
