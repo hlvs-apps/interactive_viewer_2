@@ -48,3 +48,9 @@
 ## 0.0.10
 
 * Upgraded deprecated Code
+
+## 0.0.11
+
+* Added constrained property, disabled by default (changes behavior of InteractiveViewer2) (In InteractiveViewer it is enabled by default)
+* Various bugfixes
+* New example app

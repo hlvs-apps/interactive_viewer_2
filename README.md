@@ -2,6 +2,8 @@
 
 [![Pub Version](https://img.shields.io/pub/v/interactive_viewer_2.svg)](https://pub.dev/packages/interactive_viewer_2)
 
+[![Try it out - Live Demo](https://img.shields.io/badge/Try%20it%20out-Live%20Demo-2ea44f?style=for-the-badge)](https://hlvs-apps.github.io/interactive_viewer_2/)
+
 **Interactive Viewer 2** is a Flutter library that offers enhanced functionalities compared to the default `InteractiveViewer`. It provides smoother interaction, improved zoom features, and better support for widgets larger than the viewport. If you're looking to implement interactive and zoomable widgets in your Flutter app, this package is designed to fulfill those needs.
 
 ## Features
